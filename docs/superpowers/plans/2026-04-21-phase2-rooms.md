@@ -2707,13 +2707,13 @@ git commit -m "feat(api): GET /api/channels/{id}/members"
 
 Per spec §2.4.8, removing a member from a room by an admin is recorded as a ban — the member's `ChannelMember` row stays but gets `BannedAt` set, so they cannot rejoin without unban.
 
-- [ ] **Step 26.1: Append route**
+- [x] **Step 26.1: Append route**
 
 ```csharp
         group.MapDelete("/members/{userId:guid}", BanMember);
 ```
 
-- [ ] **Step 26.2: Append handler**
+- [x] **Step 26.2: Append handler**
 
 ```csharp
     private static async Task<IResult> BanMember(
@@ -2742,7 +2742,7 @@ Per spec §2.4.8, removing a member from a room by an admin is recorded as a ban
     }
 ```
 
-- [ ] **Step 26.3: Write `ModerationFlowTests.cs`**
+- [x] **Step 26.3: Write `ModerationFlowTests.cs`**
 
 ```csharp
 using System.Net;
@@ -2814,7 +2814,7 @@ public sealed class ModerationFlowTests(AppHostFixture fx)
 
 Close the class with `}` — actual file-end.
 
-- [ ] **Step 26.4: Run + commit**
+- [x] **Step 26.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ModerationFlowTests"
