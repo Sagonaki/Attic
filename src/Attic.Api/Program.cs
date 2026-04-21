@@ -39,6 +39,9 @@ builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();
 
+builder.Services.AddSingleton<Attic.Infrastructure.Presence.IPresenceStore,
+                              Attic.Infrastructure.Presence.RedisPresenceStore>();
+
 builder.Services.Configure<Attic.Infrastructure.Storage.AttachmentStorageOptions>(
     builder.Configuration.GetSection("Attachments"));
 builder.Services.AddSingleton<Attic.Infrastructure.Storage.IAttachmentStorage,
