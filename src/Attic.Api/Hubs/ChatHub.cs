@@ -85,6 +85,28 @@ public sealed class ChatHub(
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Channel(channelId));
     }
+
+    public async Task<object> DeleteMessage(long messageId)
+    {
+        var userId = UserId;
+        if (userId is null) return new { ok = false, error = "unauthorized" };
+
+        var msg = await db.Messages.AsTracking().FirstOrDefaultAsync(m => m.Id == messageId);
+        if (msg is null) return new { ok = false, error = "not_found" };
+
+        var channel = await db.Channels.AsNoTracking().FirstAsync(c => c.Id == msg.ChannelId);
+        var membership = await db.ChannelMembers.IgnoreQueryFilters().AsNoTracking()
+            .FirstOrDefaultAsync(m => m.ChannelId == msg.ChannelId && m.UserId == userId.Value);
+
+        var auth = AuthorizationRules.CanDeleteMessage(msg, userId.Value, membership, channel.Kind);
+        if (!auth.Allowed) return new { ok = false, error = auth.Reason.ToString() };
+
+        msg.SoftDelete(clock.UtcNow);
+        await db.SaveChangesAsync();
+
+        await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageDeleted", msg.ChannelId, msg.Id);
+        return new { ok = true };
+    }
 }
 
 public static class GroupNames
