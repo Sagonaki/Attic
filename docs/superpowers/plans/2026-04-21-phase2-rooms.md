@@ -1695,7 +1695,7 @@ git commit -m "feat(api): add FluentValidation validators for Phase 2 requests"
 
 This task scaffolds the `ChannelsEndpoints` static class and maps the first route (`POST /api/channels`). Subsequent tasks append sibling routes to the same group.
 
-- [ ] **Step 18.1: Write `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`**
+- [x] **Step 18.1: Write `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`**
 
 ```csharp
 using Attic.Api.Auth;
@@ -1761,7 +1761,7 @@ public static class ChannelsEndpoints
 }
 ```
 
-- [ ] **Step 18.2: Map the group in `Program.cs`**
+- [x] **Step 18.2: Map the group in `Program.cs`**
 
 Open `src/Attic.Api/Program.cs`. After `app.MapMessagesEndpoints();` add:
 
@@ -1769,7 +1769,7 @@ Open `src/Attic.Api/Program.cs`. After `app.MapMessagesEndpoints();` add:
 app.MapChannelsEndpoints();
 ```
 
-- [ ] **Step 18.3: Write integration test — `tests/Attic.Api.IntegrationTests/ChannelCrudFlowTests.cs`**
+- [x] **Step 18.3: Write integration test — `tests/Attic.Api.IntegrationTests/ChannelCrudFlowTests.cs`**
 
 ```csharp
 using System.Net;
@@ -1843,7 +1843,7 @@ public sealed class ChannelCrudFlowTests(AppHostFixture fx)
 }
 ```
 
-- [ ] **Step 18.4: Move `RegisterFresh` helper into a shared static class**
+- [x] **Step 18.4: Move `RegisterFresh` helper into a shared static class**
 
 Create `tests/Attic.Api.IntegrationTests/TestHelpers.cs`:
 
@@ -1892,7 +1892,7 @@ But note `RegisterFresh` needs access to the fixture's `BaseAddress`. The shared
 
 And update the call sites (`await RegisterFresh(ct);`) accordingly. They're already instance calls on the test class, so this works.
 
-- [ ] **Step 18.5: Run integration tests**
+- [x] **Step 18.5: Run integration tests**
 
 ```bash
 export DOCKER_HOST=unix:///var/folders/32/wf0lxrcx6fzgd284x_b2wgf80000gn/T/podman/podman-machine-default-api.sock
@@ -1901,7 +1901,7 @@ dotnet test tests/Attic.Api.IntegrationTests --filter "ChannelCrudFlowTests|Mess
 
 Expected: all green (3 new + 2 messaging + 4 auth = 9). The MessagingFlowTests from Task 14 also start passing now that `CreateChannelRequest`/`ChannelDetails` exist and the endpoint is mapped.
 
-- [ ] **Step 18.6: Commit**
+- [x] **Step 18.6: Commit**
 
 ```bash
 git add src/Attic.Api/Endpoints/ChannelsEndpoints.cs src/Attic.Api/Program.cs \
