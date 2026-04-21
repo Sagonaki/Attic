@@ -84,4 +84,49 @@ public sealed class FriendsFlowTests(AppHostFixture fx)
         var err = (await send.Content.ReadFromJsonAsync<ApiError>(ct))!;
         err.Code.ShouldBe("self_request");
     }
+
+    [Fact]
+    public async Task List_friends_returns_both_sides_after_accept()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (sender, senderUsername, _) = await Register(ct);
+        var (recipient, recipientUsername, _) = await Register(ct);
+
+        var send = await sender.PostAsJsonAsync("/api/friend-requests",
+            new SendFriendRequestRequest(recipientUsername, null), ct);
+        var dto = (await send.Content.ReadFromJsonAsync<FriendRequestDto>(ct))!;
+        (await recipient.PostAsync($"/api/friend-requests/{dto.Id:D}/accept", null, ct)).EnsureSuccessStatusCode();
+
+        var senderFriends = await sender.GetAsync("/api/friends", ct);
+        var senderList = (await senderFriends.Content.ReadFromJsonAsync<List<FriendDto>>(ct))!;
+        senderList.ShouldContain(f => f.Username == recipientUsername);
+
+        var recipientFriends = await recipient.GetAsync("/api/friends", ct);
+        var recipientList = (await recipientFriends.Content.ReadFromJsonAsync<List<FriendDto>>(ct))!;
+        recipientList.ShouldContain(f => f.Username == senderUsername);
+    }
+
+    [Fact]
+    public async Task Remove_friend_clears_friendship_both_directions()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (sender, _, _) = await Register(ct);
+        var (recipient, recipientUsername, _) = await Register(ct);
+
+        var send = await sender.PostAsJsonAsync("/api/friend-requests",
+            new SendFriendRequestRequest(recipientUsername, null), ct);
+        var dto = (await send.Content.ReadFromJsonAsync<FriendRequestDto>(ct))!;
+        (await recipient.PostAsync($"/api/friend-requests/{dto.Id:D}/accept", null, ct)).EnsureSuccessStatusCode();
+
+        var senderFriends = await sender.GetAsync("/api/friends", ct);
+        var senderList = (await senderFriends.Content.ReadFromJsonAsync<List<FriendDto>>(ct))!;
+        var recipientId = senderList.First(f => f.Username == recipientUsername).UserId;
+
+        var del = await sender.DeleteAsync($"/api/friends/{recipientId:D}", ct);
+        del.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var after = await recipient.GetAsync("/api/friends", ct);
+        var afterList = (await after.Content.ReadFromJsonAsync<List<FriendDto>>(ct))!;
+        afterList.ShouldNotContain(f => f.UserId == recipientId);
+    }
 }
