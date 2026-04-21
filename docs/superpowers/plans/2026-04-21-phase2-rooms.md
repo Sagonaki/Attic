@@ -2830,13 +2830,13 @@ git commit -m "feat(api): DELETE /api/channels/{id}/members/{userId} (admin ban)
 - Modify: `src/Attic.Api/Endpoints/ChannelMembersEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/ModerationFlowTests.cs`
 
-- [ ] **Step 27.1: Append route**
+- [x] **Step 27.1: Append route**
 
 ```csharp
         group.MapPost("/members/{userId:guid}/role", ChangeMemberRole);
 ```
 
-- [ ] **Step 27.2: Append handler**
+- [x] **Step 27.2: Append handler**
 
 ```csharp
     private static async Task<IResult> ChangeMemberRole(
@@ -2872,7 +2872,7 @@ git commit -m "feat(api): DELETE /api/channels/{id}/members/{userId} (admin ban)
     }
 ```
 
-- [ ] **Step 27.3: Append test**
+- [x] **Step 27.3: Append test**
 
 ```csharp
     [Fact]
@@ -2907,7 +2907,7 @@ git commit -m "feat(api): DELETE /api/channels/{id}/members/{userId} (admin ban)
     }
 ```
 
-- [ ] **Step 27.4: Run + commit**
+- [x] **Step 27.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ModerationFlowTests"
