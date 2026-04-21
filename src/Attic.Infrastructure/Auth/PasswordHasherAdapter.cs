@@ -21,5 +21,5 @@ public sealed class PasswordHasherAdapter : IPasswordHasher
     }
 
     private static User CreateDummy() =>
-        User.Register(Guid.Empty, "dummy@void", "dummy", "placeholder", DateTimeOffset.UnixEpoch);
+        User.Register(Guid.Empty, "dummy@void.local", "dummy", "placeholder", DateTimeOffset.UnixEpoch);
 }

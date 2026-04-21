@@ -14,10 +14,12 @@ public sealed class TimestampInterceptor(IClock clock) : SaveChangesInterceptor
         var now = clock.UtcNow;
         foreach (var entry in ctx.ChangeTracker.Entries().Where(e => e.State == EntityState.Modified))
         {
-            if (entry.Metadata.FindProperty("UpdatedAt") is not null)
-            {
-                entry.Property("UpdatedAt").CurrentValue = now;
-            }
+            if (entry.Metadata.FindProperty("UpdatedAt") is null) continue;
+            var prop = entry.Property("UpdatedAt");
+            // Respect callers that set UpdatedAt explicitly (e.g. Message.Edit sets the "edited at"
+            // timestamp it wants the UI to display). Only stamp when the property wasn't touched.
+            if (prop.IsModified) continue;
+            prop.CurrentValue = now;
         }
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }

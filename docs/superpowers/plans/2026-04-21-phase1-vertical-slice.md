@@ -204,7 +204,7 @@ Expected: `Attic.slnx` is created.
 
     <!-- Auxiliary -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
-    <!-- Note: Microsoft.AspNetCore.Identity is part of the Microsoft.AspNetCore.App shared framework in .NET 5+; no standalone NuGet package is needed. `IPasswordHasher<T>` is pulled in via FrameworkReference below. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="10.0.0" />
 
     <!-- Observability -->
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
@@ -338,17 +338,13 @@ Edit `src/Attic.Infrastructure/Attic.Infrastructure.csproj`:
     <ProjectReference Include="..\Attic.Domain\Attic.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" />
   </ItemGroup>
 </Project>
 ```
-
-The `FrameworkReference` pulls in `Microsoft.AspNetCore.Identity.IPasswordHasher<T>` (part of the shared framework since .NET 5); no standalone NuGet package is required.
 
 - [ ] **Step 4.3: Build**
 
@@ -397,14 +393,13 @@ dotnet sln Attic.slnx add src/Attic.Api/Attic.Api.csproj
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" />
     <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Aspire.StackExchange.Redis" />
   </ItemGroup>
 </Project>
 ```
-
-(`IPasswordHasher<T>` comes in via `Microsoft.NET.Sdk.Web`'s implicit `Microsoft.AspNetCore.App` framework reference; no explicit `Microsoft.AspNetCore.Identity` package is needed.)
 
 - [ ] **Step 5.3: Replace `Program.cs` with a minimal placeholder**
 
@@ -935,7 +930,7 @@ public sealed class User
     public string PasswordHash { get; private set; } = default!;
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private User() { }
 
@@ -1086,7 +1081,7 @@ public sealed class Session
     public DateTimeOffset LastSeenAt { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private Session() { }
 
@@ -1157,7 +1152,7 @@ public sealed class Channel
     public Guid? OwnerId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private Channel() { }
 
@@ -1232,7 +1227,7 @@ public sealed class ChannelMember
     public DateTimeOffset? BannedAt { get; private set; }
     public Guid? BannedById { get; private set; }
     public string? BanReason { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private ChannelMember() { }
 
@@ -1303,7 +1298,7 @@ public sealed class Message
     public string Content { get; private set; } = default!;
     public long? ReplyToId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
     private Message() { }
@@ -1766,7 +1761,7 @@ public sealed class PasswordHasherAdapter : IPasswordHasher
     }
 
     private static User CreateDummy() =>
-        User.Register(Guid.Empty, "dummy@void", "dummy", "placeholder", DateTimeOffset.UnixEpoch);
+        User.Register(Guid.Empty, "dummy@void.local", "dummy", "placeholder", DateTimeOffset.UnixEpoch);   // email must satisfy User.EmailRegex (requires a dot after @)
 }
 ```
 
@@ -1830,10 +1825,12 @@ public sealed class TimestampInterceptor(IClock clock) : SaveChangesInterceptor
         var now = clock.UtcNow;
         foreach (var entry in ctx.ChangeTracker.Entries().Where(e => e.State == EntityState.Modified))
         {
-            if (entry.Metadata.FindProperty("UpdatedAt") is not null)
-            {
-                entry.Property("UpdatedAt").CurrentValue = now;
-            }
+            if (entry.Metadata.FindProperty("UpdatedAt") is null) continue;
+            var prop = entry.Property("UpdatedAt");
+            // Respect callers that set UpdatedAt explicitly (e.g. Message.Edit sets the "edited at"
+            // timestamp it wants the UI to display). Only stamp when the property wasn't touched.
+            if (prop.IsModified) continue;
+            prop.CurrentValue = now;
         }
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -1886,7 +1883,7 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         b.Property(s => s.Ip).HasMaxLength(64);
         b.HasIndex(s => new { s.UserId })
             .HasDatabaseName("ix_sessions_active")
-            .HasFilter("revoked_at IS NULL");   // snake_case: UseSnakeCaseNamingConvention does not rewrite raw SQL
+            .HasFilter("\"RevokedAt\" IS NULL");
     }
 }
 ```
@@ -1915,7 +1912,7 @@ public sealed class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         b.HasIndex(c => c.Name)
             .IsUnique()
             .HasDatabaseName("ux_channels_name_not_personal")
-            .HasFilter($"kind <> {(int)ChannelKind.Personal} AND deleted_at IS NULL")   // snake_case: raw SQL is not rewritten by UseSnakeCaseNamingConvention
+            .HasFilter($"\"Kind\" <> {(int)ChannelKind.Personal} AND \"DeletedAt\" IS NULL")
             .IncludeProperties(c => new { c.Description, c.Kind });
     }
 }
@@ -1961,7 +1958,7 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.HasKey(m => m.Id);
         b.Property(m => m.Id).UseIdentityAlwaysColumn();
         b.Property(m => m.Content).IsRequired();
-        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(content) <= 3072"));   // snake_case: raw SQL is not rewritten by UseSnakeCaseNamingConvention
+        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(\"Content\") <= 3072"));
         b.HasQueryFilter(m => m.DeletedAt == null);
 
         b.HasIndex(m => new { m.ChannelId, m.Id })

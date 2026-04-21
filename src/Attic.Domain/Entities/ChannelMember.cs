@@ -11,7 +11,7 @@ public sealed class ChannelMember
     public DateTimeOffset? BannedAt { get; private set; }
     public Guid? BannedById { get; private set; }
     public string? BanReason { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private ChannelMember() { }
 

@@ -12,7 +12,7 @@ public sealed class Message
     public string Content { get; private set; } = default!;
     public long? ReplyToId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
     private Message() { }
