@@ -476,7 +476,7 @@ git commit -m "feat(domain): add Friendship entity with canonical unordered-pair
 - Create: `src/Attic.Domain/Entities/UserBlock.cs`
 - Create: `tests/Attic.Domain.Tests/UserBlockTests.cs`
 
-- [ ] **Step 4.1: Write the failing tests**
+- [x] **Step 4.1: Write the failing tests**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -510,13 +510,13 @@ public class UserBlockTests
 }
 ```
 
-- [ ] **Step 4.2: Run, verify compile failure**
+- [x] **Step 4.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "UserBlockTests"
 ```
 
-- [ ] **Step 4.3: Implement `src/Attic.Domain/Entities/UserBlock.cs`**
+- [x] **Step 4.3: Implement `src/Attic.Domain/Entities/UserBlock.cs`**
 
 ```csharp
 namespace Attic.Domain.Entities;
@@ -539,7 +539,7 @@ public sealed class UserBlock
 }
 ```
 
-- [ ] **Step 4.4: Run, verify pass**
+- [x] **Step 4.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "UserBlockTests"
@@ -547,7 +547,7 @@ dotnet test tests/Attic.Domain.Tests --filter "UserBlockTests"
 
 Expected: 2 passing.
 
-- [ ] **Step 4.5: Commit**
+- [x] **Step 4.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Entities/UserBlock.cs \
