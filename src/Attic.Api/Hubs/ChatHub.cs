@@ -13,13 +13,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Attic.Api.Hubs;
 
 [Authorize]
-public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser currentUser) : Hub
+public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
 {
     public const string Path = "/hub";
 
+    // The scoped CurrentUser is populated by AtticAuthenticationHandler on HTTP requests
+    // only; SignalR invocation scopes don't go through it, so we read the user id from
+    // Context.User directly here.
+    private Guid? UserId => CurrentUser.ReadUserId(Context.User!);
+
     public override async Task OnConnectedAsync()
     {
-        var userId = CurrentUser.ReadUserId(Context.User!);
+        var userId = UserId;
         var sessionId = CurrentUser.ReadSessionId(Context.User!);
         if (userId is null || sessionId is null)
         {
@@ -34,7 +39,8 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<SendMessageResponse> SendMessage(SendMessageRequest request)
     {
-        if (!currentUser.IsAuthenticated) return new SendMessageResponse(false, null, null, "unauthorized");
+        var userId = UserId;
+        if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
 
         if (string.IsNullOrWhiteSpace(request.Content))
             return new SendMessageResponse(false, null, null, "empty_content");
@@ -44,7 +50,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
         var member = await db.ChannelMembers
             .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == currentUser.UserIdOrThrow);
+            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == userId.Value);
 
         // Phase 1 fallback: the seeded lobby has no members yet; auto-join on first post.
         // Do NOT auto-join banned members (BannedAt != null means banned).
@@ -53,7 +59,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
             var channelExists = await db.Channels.AnyAsync(c => c.Id == request.ChannelId);
             if (!channelExists) return new SendMessageResponse(false, null, null, "channel_not_found");
 
-            var auto = ChannelMember.Join(request.ChannelId, currentUser.UserIdOrThrow, ChannelRole.Member, clock.UtcNow);
+            var auto = ChannelMember.Join(request.ChannelId, userId.Value, ChannelRole.Member, clock.UtcNow);
             db.ChannelMembers.Add(auto);
             member = auto;
         }
@@ -61,11 +67,11 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
         var auth = AuthorizationRules.CanPostInChannel(member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
 
-        var msg = Message.Post(request.ChannelId, currentUser.UserIdOrThrow, request.Content, request.ReplyToId, clock.UtcNow);
+        var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
         await db.SaveChangesAsync();
 
-        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == currentUser.UserIdOrThrow);
+        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
         var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
@@ -75,7 +81,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<object> SubscribeToChannel(Guid channelId)
     {
-        if (!currentUser.IsAuthenticated) return new { ok = false, error = "unauthorized" };
+        if (UserId is null) return new { ok = false, error = "unauthorized" };
 
         var channelExists = await db.Channels.AnyAsync(c => c.Id == channelId);
         if (!channelExists) return new { ok = false, error = "channel_not_found" };

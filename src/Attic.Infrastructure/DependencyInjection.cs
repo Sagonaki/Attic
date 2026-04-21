@@ -6,6 +6,7 @@ using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -24,10 +25,21 @@ public static class DependencyInjection
 
     public static IHostApplicationBuilder AddAtticDbContext(this IHostApplicationBuilder builder, string connectionName)
     {
-        builder.AddNpgsqlDbContext<AtticDbContext>(connectionName, configureDbContextOptions: options =>
+        // Aspire's AddNpgsqlDbContext enables DbContext pooling unconditionally, which
+        // forbids setting options inside OnConfiguring. We register the DbContext
+        // ourselves (non-pooled, so we can attach a DI-resolved interceptor at options-
+        // build time) and then layer Aspire's telemetry / retries / health checks on top
+        // via EnrichNpgsqlDbContext.
+        var connectionString = builder.Configuration.GetConnectionString(connectionName)
+            ?? throw new InvalidOperationException($"Connection string '{connectionName}' was not found.");
+
+        builder.Services.AddDbContext<AtticDbContext>((sp, options) =>
         {
+            options.UseNpgsql(connectionString);
             options.UseSnakeCaseNamingConvention();
+            options.AddInterceptors(sp.GetRequiredService<TimestampInterceptor>());
         });
+        builder.EnrichNpgsqlDbContext<AtticDbContext>();
         return builder;
     }
 }

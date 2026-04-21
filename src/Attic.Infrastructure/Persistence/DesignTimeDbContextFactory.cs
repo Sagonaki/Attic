@@ -1,4 +1,3 @@
-using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -6,6 +5,8 @@ namespace Attic.Infrastructure.Persistence;
 
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AtticDbContext>
 {
+    // Used only by `dotnet-ef` at design time to generate migrations. Never opens a
+    // connection — the connection string below is a placeholder for tool completeness.
     public AtticDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<AtticDbContext>()
@@ -13,7 +14,6 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Att
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        var interceptor = new TimestampInterceptor(new Clock.SystemClock());
-        return new AtticDbContext(options, interceptor);
+        return new AtticDbContext(options);
     }
 }
