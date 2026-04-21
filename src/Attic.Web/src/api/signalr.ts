@@ -1,5 +1,5 @@
 import * as signalR from '@microsoft/signalr';
-import type { MessageDto, SendMessageResponse, ChannelMemberSummary, InvitationDto, FriendRequestDto, EditMessageRequest, EditMessageResponse } from '../types';
+import type { MessageDto, SendMessageResponse, ChannelMemberSummary, InvitationDto, FriendRequestDto, EditMessageRequest, EditMessageResponse, PresenceState } from '../types';
 
 export interface HubClient {
   connection: signalR.HubConnection;
@@ -21,6 +21,11 @@ export interface HubClient {
   onFriendRequestDecided(cb: (requestId: string, status: string) => void): () => void;
   onFriendRemoved(cb: (otherUserId: string) => void): () => void;
   onBlocked(cb: (blockerId: string) => void): () => void;
+  heartbeat(state: 'active' | 'idle'): Promise<void>;
+  markRead(channelId: string, lastMessageId: number): Promise<void>;
+  onPresenceChanged(cb: (userId: string, state: PresenceState) => void): () => void;
+  onUnreadChanged(cb: (channelId: string, count: number) => void): () => void;
+  onForceLogout(cb: (sessionId: string) => void): () => void;
 }
 
 let singleton: HubClient | null = null;
@@ -84,6 +89,17 @@ export function getOrCreateHubClient(): HubClient {
     onFriendRequestDecided: (cb) => on<[string, string]>('FriendRequestDecided', cb),
     onFriendRemoved: (cb) => on<[string]>('FriendRemoved', cb),
     onBlocked: (cb) => on<[string]>('Blocked', cb),
+    async heartbeat(state) {
+      if (connection.state !== signalR.HubConnectionState.Connected) return;
+      await connection.invoke('Heartbeat', state);
+    },
+    async markRead(channelId, lastMessageId) {
+      await ensureStarted();
+      await connection.invoke('MarkRead', channelId, lastMessageId);
+    },
+    onPresenceChanged: (cb) => on<[string, PresenceState]>('PresenceChanged', cb),
+    onUnreadChanged: (cb) => on<[string, number]>('UnreadChanged', cb),
+    onForceLogout: (cb) => on<[string]>('ForceLogout', cb),
   };
 
   return singleton;
