@@ -35,6 +35,7 @@ builder.Services.AddSignalR(o =>
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
+builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins("http://localhost:3000", "https://localhost:3000")
