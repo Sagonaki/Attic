@@ -127,6 +127,24 @@ public sealed class ChatHub(
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
+        // Bump per-member unread counters (except the sender).
+        var memberIds = await db.ChannelMembers.AsNoTracking()
+            .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
+            .Select(m => m.UserId)
+            .ToListAsync();
+
+        foreach (var memberId in memberIds)
+        {
+            var read = await db.ChannelReads.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.ChannelId == request.ChannelId && r.UserId == memberId);
+            var lastRead = read?.LastReadMessageId ?? 0;
+            var unreadCount = await db.Messages.AsNoTracking()
+                .CountAsync(m => m.ChannelId == request.ChannelId && m.Id > lastRead);
+
+            await Clients.Group(GroupNames.User(memberId))
+                .SendAsync("UnreadChanged", request.ChannelId, unreadCount);
+        }
+
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }
 
@@ -209,6 +227,29 @@ public sealed class ChatHub(
 
         var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
         await presenceStore.WriteHeartbeatAsync(userId.Value, Context.ConnectionId, tabState, nowMs, Context.ConnectionAborted);
+    }
+
+    public async Task<object> MarkRead(Guid channelId, long lastMessageId)
+    {
+        var userId = UserId;
+        if (userId is null) return new { ok = false };
+
+        var existing = await db.ChannelReads.AsTracking()
+            .FirstOrDefaultAsync(r => r.ChannelId == channelId && r.UserId == userId.Value);
+        if (existing is null)
+        {
+            db.ChannelReads.Add(Attic.Domain.Entities.ChannelRead.Create(channelId, userId.Value, lastMessageId, clock.UtcNow));
+        }
+        else
+        {
+            existing.MarkRead(lastMessageId, clock.UtcNow);
+        }
+        await db.SaveChangesAsync();
+
+        await Clients.Group(GroupNames.User(userId.Value))
+            .SendAsync("UnreadChanged", channelId, 0);
+
+        return new { ok = true };
     }
 }
 
