@@ -10,6 +10,7 @@ var redis = builder.AddRedis("redis")
 var api = builder.AddProject<Projects.Attic_Api>("api")
     .WithReference(postgres)
     .WithReference(redis)
+    .WithEnvironment("Attachments__Root", "data/attachments")
     .WaitFor(postgres)
     .WaitFor(redis);
 
