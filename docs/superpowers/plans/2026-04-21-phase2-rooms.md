@@ -409,7 +409,7 @@ git commit -m "feat(domain): add ChannelInvitation entity with state-machine beh
 - Modify: `src/Attic.Domain/Entities/Channel.cs`
 - Create: `tests/Attic.Domain.Tests/ChannelBehaviorTests.cs`
 
-- [ ] **Step 4.1: Write the failing tests — `tests/Attic.Domain.Tests/ChannelBehaviorTests.cs`**
+- [x] **Step 4.1: Write the failing tests — `tests/Attic.Domain.Tests/ChannelBehaviorTests.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -470,7 +470,7 @@ public class ChannelBehaviorTests
 }
 ```
 
-- [ ] **Step 4.2: Run, verify fail**
+- [x] **Step 4.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "ChannelBehaviorTests"
@@ -478,7 +478,7 @@ dotnet test tests/Attic.Domain.Tests --filter "ChannelBehaviorTests"
 
 Expected: compile failure (Rename, UpdateDescription don't exist).
 
-- [ ] **Step 4.3: Implement `Rename` and `UpdateDescription` on `Channel`**
+- [x] **Step 4.3: Implement `Rename` and `UpdateDescription` on `Channel`**
 
 Open `src/Attic.Domain/Entities/Channel.cs`. After the `SoftDelete` method (end of class), append:
 
@@ -502,7 +502,7 @@ Open `src/Attic.Domain/Entities/Channel.cs`. After the `SoftDelete` method (end 
     }
 ```
 
-- [ ] **Step 4.4: Run, verify pass**
+- [x] **Step 4.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
@@ -510,7 +510,7 @@ dotnet test tests/Attic.Domain.Tests
 
 Expected: 33 prior + 7 invitation tests + 6 channel-behavior tests = 46 passing.
 
-- [ ] **Step 4.5: Commit**
+- [x] **Step 4.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Entities/Channel.cs tests/Attic.Domain.Tests/ChannelBehaviorTests.cs

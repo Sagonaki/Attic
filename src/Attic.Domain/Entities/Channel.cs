@@ -47,4 +47,22 @@ public sealed class Channel
     }
 
     public void SoftDelete(DateTimeOffset at) => DeletedAt ??= at;
+
+    public void Rename(string name, DateTimeOffset at)
+    {
+        if (Kind == ChannelKind.Personal)
+            throw new InvalidOperationException("Personal channels cannot be renamed.");
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Name is required.", nameof(name));
+        Name = name.Trim();
+        UpdatedAt = at;
+    }
+
+    public void UpdateDescription(string? description, DateTimeOffset at)
+    {
+        if (Kind == ChannelKind.Personal)
+            throw new InvalidOperationException("Personal channels do not have a description.");
+        Description = description?.Trim();
+        UpdatedAt = at;
+    }
 }
