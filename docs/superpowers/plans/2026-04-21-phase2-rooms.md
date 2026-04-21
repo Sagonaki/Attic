@@ -211,7 +211,7 @@ git commit -m "feat(domain): extend AuthorizationFailureReason with Phase 2 code
 **Files:**
 - Create: `src/Attic.Domain/Enums/InvitationStatus.cs`
 
-- [ ] **Step 2.1: Write `InvitationStatus.cs`**
+- [x] **Step 2.1: Write `InvitationStatus.cs`**
 
 ```csharp
 namespace Attic.Domain.Enums;
@@ -225,7 +225,7 @@ public enum InvitationStatus
 }
 ```
 
-- [ ] **Step 2.2: Build + commit**
+- [x] **Step 2.2: Build + commit**
 
 ```bash
 dotnet build src/Attic.Domain
