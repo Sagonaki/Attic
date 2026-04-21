@@ -1,5 +1,5 @@
 import * as signalR from '@microsoft/signalr';
-import type { MessageDto, SendMessageResponse, ChannelMemberSummary, InvitationDto } from '../types';
+import type { MessageDto, SendMessageResponse, ChannelMemberSummary, InvitationDto, FriendRequestDto } from '../types';
 
 export interface HubClient {
   connection: signalR.HubConnection;
@@ -15,6 +15,10 @@ export interface HubClient {
   onRemovedFromChannel(cb: (channelId: string, reason: string) => void): () => void;
   onChannelDeleted(cb: (channelId: string) => void): () => void;
   onInvitationReceived(cb: (invitation: InvitationDto) => void): () => void;
+  onFriendRequestReceived(cb: (dto: FriendRequestDto) => void): () => void;
+  onFriendRequestDecided(cb: (requestId: string, status: string) => void): () => void;
+  onFriendRemoved(cb: (otherUserId: string) => void): () => void;
+  onBlocked(cb: (blockerId: string) => void): () => void;
 }
 
 let singleton: HubClient | null = null;
@@ -69,6 +73,10 @@ export function getOrCreateHubClient(): HubClient {
     onRemovedFromChannel: (cb) => on<[string, string]>('RemovedFromChannel', cb),
     onChannelDeleted: (cb) => on<[string]>('ChannelDeleted', cb),
     onInvitationReceived: (cb) => on<[InvitationDto]>('InvitationReceived', cb),
+    onFriendRequestReceived: (cb) => on<[FriendRequestDto]>('FriendRequestReceived', cb),
+    onFriendRequestDecided: (cb) => on<[string, string]>('FriendRequestDecided', cb),
+    onFriendRemoved: (cb) => on<[string]>('FriendRemoved', cb),
+    onBlocked: (cb) => on<[string]>('Blocked', cb),
   };
 
   return singleton;
