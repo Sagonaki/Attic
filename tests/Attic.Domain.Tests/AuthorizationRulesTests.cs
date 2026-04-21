@@ -145,4 +145,49 @@ public class AuthorizationRulesTests
         AuthorizationRules.CanDeleteChannel(channel, actorUserId: Guid.NewGuid()).Reason
             .ShouldBe(AuthorizationFailureReason.NotOwner);
     }
+
+    [Fact]
+    public void CanBanFromChannel_allows_admin_banning_member()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanBanFromChannel_allows_owner_banning_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanBanFromChannel_denies_banning_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var owner = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, owner).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeTargeted);
+    }
+
+    [Fact]
+    public void CanBanFromChannel_denies_non_admin_actor()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Reason.ShouldBe(AuthorizationFailureReason.NotAdmin);
+    }
+
+    [Fact]
+    public void CanUnbanFromChannel_allows_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanUnbanFromChannel(actor).Allowed.ShouldBeTrue();
+    }
 }

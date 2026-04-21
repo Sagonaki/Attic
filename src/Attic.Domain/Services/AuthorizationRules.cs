@@ -46,4 +46,15 @@ public static class AuthorizationRules
         if (channel.OwnerId != actorUserId) return AuthorizationResult.Deny(AuthorizationFailureReason.NotOwner);
         return AuthorizationResult.Ok();
     }
+
+    public static AuthorizationResult CanBanFromChannel(ChannelMember? actor, ChannelMember? target)
+    {
+        var manage = CanManageChannel(actor);
+        if (!manage.Allowed) return manage;
+        if (target is null) return AuthorizationResult.Deny(AuthorizationFailureReason.NotAMember);
+        if (target.Role == Enums.ChannelRole.Owner) return AuthorizationResult.Deny(AuthorizationFailureReason.OwnerCannotBeTargeted);
+        return AuthorizationResult.Ok();
+    }
+
+    public static AuthorizationResult CanUnbanFromChannel(ChannelMember? actor) => CanManageChannel(actor);
 }

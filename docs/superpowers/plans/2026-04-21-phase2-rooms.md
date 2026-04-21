@@ -744,7 +744,7 @@ git commit -m "feat(domain): add CanManageChannel and CanDeleteChannel rules"
 - Modify: `src/Attic.Domain/Services/AuthorizationRules.cs`
 - Modify: `tests/Attic.Domain.Tests/AuthorizationRulesTests.cs`
 
-- [ ] **Step 7.1: Append tests**
+- [x] **Step 7.1: Append tests**
 
 ```csharp
     [Fact]
@@ -793,13 +793,13 @@ git commit -m "feat(domain): add CanManageChannel and CanDeleteChannel rules"
     }
 ```
 
-- [ ] **Step 7.2: Run, verify fail**
+- [x] **Step 7.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanBanFromChannel|CanUnbanFromChannel"
 ```
 
-- [ ] **Step 7.3: Append methods to `AuthorizationRules.cs`**
+- [x] **Step 7.3: Append methods to `AuthorizationRules.cs`**
 
 ```csharp
     public static AuthorizationResult CanBanFromChannel(ChannelMember? actor, ChannelMember? target)
@@ -814,7 +814,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanBanFromChannel|CanUnbanFromCha
     public static AuthorizationResult CanUnbanFromChannel(ChannelMember? actor) => CanManageChannel(actor);
 ```
 
-- [ ] **Step 7.4: Run, verify pass; commit**
+- [x] **Step 7.4: Run, verify pass; commit**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
