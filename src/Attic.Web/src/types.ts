@@ -109,3 +109,35 @@ export interface InvitationDto {
 export interface InviteToChannelRequest {
   username: string;
 }
+
+export interface FriendRequestDto {
+  id: string;
+  senderId: string;
+  senderUsername: string;
+  recipientId: string;
+  recipientUsername: string;
+  text: string | null;
+  status: string;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface FriendDto {
+  userId: string;
+  username: string;
+  friendsSince: string;
+}
+
+export interface SendFriendRequestRequest {
+  username: string;
+  text: string | null;
+}
+
+export interface UserSearchResult {
+  id: string;
+  username: string;
+}
+
+export interface OpenPersonalChatRequest {
+  username: string;
+}
