@@ -25,6 +25,7 @@ public static class ChannelsEndpoints
         group.MapGet("/{id:guid}", GetChannelDetails);
         group.MapPatch("/{id:guid}", UpdateChannel);
         group.MapDelete("/{id:guid}", DeleteChannel);
+        group.MapPost("/{id:guid}/join", JoinChannel);
 
         return routes;
     }
@@ -225,6 +226,32 @@ public static class ChannelsEndpoints
             channel.OwnerId,
             channel.CreatedAt,
             memberCount));
+    }
+
+    private static async Task<IResult> JoinChannel(
+        Guid id,
+        AtticDbContext db,
+        IClock clock,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var channel = await db.Channels.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (channel is null) return Results.NotFound();
+
+        var userId = currentUser.UserIdOrThrow;
+        var existing = await db.ChannelMembers.IgnoreQueryFilters().AsTracking()
+            .FirstOrDefaultAsync(m => m.ChannelId == id && m.UserId == userId, ct);
+
+        var auth = Attic.Domain.Services.AuthorizationRules.CanJoinChannel(channel, existing);
+        if (!auth.Allowed) return Results.BadRequest(new ApiError(auth.Reason.ToString(), "Cannot join channel."));
+
+        var member = ChannelMember.Join(id, userId, ChannelRole.Member, clock.UtcNow);
+        db.ChannelMembers.Add(member);
+        await db.SaveChangesAsync(ct);
+
+        return Results.NoContent();
     }
 
     private static async Task<IResult> DeleteChannel(

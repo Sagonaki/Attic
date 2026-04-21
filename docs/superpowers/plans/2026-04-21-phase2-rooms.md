@@ -2392,13 +2392,13 @@ git commit -m "feat(api): DELETE /api/channels/{id} soft-deletes room (owner onl
 - Modify: `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`
 - Create: `tests/Attic.Api.IntegrationTests/MembershipFlowTests.cs`
 
-- [ ] **Step 23.1: Append route**
+- [x] **Step 23.1: Append route**
 
 ```csharp
         group.MapPost("/{id:guid}/join", JoinChannel);
 ```
 
-- [ ] **Step 23.2: Append handler**
+- [x] **Step 23.2: Append handler**
 
 ```csharp
     private static async Task<IResult> JoinChannel(
@@ -2429,7 +2429,7 @@ git commit -m "feat(api): DELETE /api/channels/{id} soft-deletes room (owner onl
     }
 ```
 
-- [ ] **Step 23.3: Write `MembershipFlowTests.cs`**
+- [x] **Step 23.3: Write `MembershipFlowTests.cs`**
 
 ```csharp
 using System.Net;
@@ -2488,7 +2488,7 @@ public sealed class MembershipFlowTests(AppHostFixture fx)
 }
 ```
 
-- [ ] **Step 23.4: Run + commit**
+- [x] **Step 23.4: Run + commit**
 
 ```bash
 export DOCKER_HOST=unix:///var/folders/32/wf0lxrcx6fzgd284x_b2wgf80000gn/T/podman/podman-machine-default-api.sock
