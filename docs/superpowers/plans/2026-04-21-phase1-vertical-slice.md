@@ -2019,7 +2019,7 @@ git commit -m "feat(infra): add AtticDbContext with entity configurations"
 
 - [ ] **Step 20.1: Write `src/Attic.Infrastructure/DependencyInjection.cs`**
 
-`AddNpgsqlDbContext` from Aspire doesn't expose the service provider in its options callback, so we attach the `TimestampInterceptor` inside `AtticDbContext.OnConfiguring` (Step 20.2) and leave this helper to wire connection + naming convention only.
+Aspire's `AddNpgsqlDbContext<T>` enables DbContext pooling unconditionally, and pooling forbids setting options inside `OnConfiguring`. We register the `DbContext` manually (non-pooled) so we can attach the DI-resolved `TimestampInterceptor` via a service-provider-aware options callback, and then layer Aspire's retries / health checks / OTel on top via `EnrichNpgsqlDbContext`.
 
 ```csharp
 using Attic.Domain.Abstractions;
@@ -2030,6 +2030,7 @@ using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -2048,40 +2049,38 @@ public static class DependencyInjection
 
     public static IHostApplicationBuilder AddAtticDbContext(this IHostApplicationBuilder builder, string connectionName)
     {
-        builder.AddNpgsqlDbContext<AtticDbContext>(connectionName, configureDbContextOptions: options =>
+        var connectionString = builder.Configuration.GetConnectionString(connectionName)
+            ?? throw new InvalidOperationException($"Connection string '{connectionName}' was not found.");
+
+        builder.Services.AddDbContext<AtticDbContext>((sp, options) =>
         {
+            options.UseNpgsql(connectionString);
             options.UseSnakeCaseNamingConvention();
+            options.AddInterceptors(sp.GetRequiredService<TimestampInterceptor>());
         });
+        builder.EnrichNpgsqlDbContext<AtticDbContext>();
         return builder;
     }
 }
 ```
 
-- [ ] **Step 20.2: Add `OnConfiguring` to `AtticDbContext` to attach the interceptor**
+- [ ] **Step 20.2: Keep `AtticDbContext` single-arg**
 
-Replace the body of `AtticDbContext` (file from Task 19) with:
+`AtticDbContext` stays with the single-argument constructor from Task 19. The interceptor is attached at options-build time by the `AddAtticDbContext` helper above — no `OnConfiguring` override is needed. Confirm the current file still reads:
 
 ```csharp
 using Attic.Domain.Entities;
-using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 
 namespace Attic.Infrastructure.Persistence;
 
-public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options, TimestampInterceptor interceptor) : DbContext(options)
+public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options) : DbContext(options)
 {
-    private readonly TimestampInterceptor _interceptor = interceptor;
-
     public DbSet<User> Users => Set<User>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<ChannelMember> ChannelMembers => Set<ChannelMember>();
     public DbSet<Message> Messages => Set<Message>();
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.AddInterceptors(_interceptor);
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -2131,7 +2130,6 @@ git commit -m "feat(infra): wire DbContext into Aspire Postgres with snake_case 
 Create `src/Attic.Infrastructure/Persistence/DesignTimeDbContextFactory.cs`:
 
 ```csharp
-using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -2139,6 +2137,8 @@ namespace Attic.Infrastructure.Persistence;
 
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AtticDbContext>
 {
+    // Used only by `dotnet-ef` at design time to generate migrations. Never opens a
+    // connection — the connection string below is a placeholder for tool completeness.
     public AtticDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<AtticDbContext>()
@@ -2146,8 +2146,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Att
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        var interceptor = new TimestampInterceptor(new Clock.SystemClock());
-        return new AtticDbContext(options, interceptor);
+        return new AtticDbContext(options);
     }
 }
 ```
@@ -3001,13 +3000,18 @@ using System.Text;
 namespace Attic.Api.Hubs;
 
 [Authorize]
-public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser currentUser) : Hub
+public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
 {
     public const string Path = "/hub";
 
+    // The scoped `CurrentUser` service is populated by AtticAuthenticationHandler on HTTP
+    // requests only; SignalR method-invocation scopes don't go through it, so hub methods
+    // read the user id from Context.User directly.
+    private Guid? UserId => CurrentUser.ReadUserId(Context.User!);
+
     public override async Task OnConnectedAsync()
     {
-        var userId = CurrentUser.ReadUserId(Context.User!);
+        var userId = UserId;
         var sessionId = CurrentUser.ReadSessionId(Context.User!);
         if (userId is null || sessionId is null)
         {
@@ -3022,7 +3026,8 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<SendMessageResponse> SendMessage(SendMessageRequest request)
     {
-        if (!currentUser.IsAuthenticated) return new SendMessageResponse(false, null, null, "unauthorized");
+        var userId = UserId;
+        if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
 
         if (string.IsNullOrWhiteSpace(request.Content))
             return new SendMessageResponse(false, null, null, "empty_content");
@@ -3032,7 +3037,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
         var member = await db.ChannelMembers
             .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == currentUser.UserIdOrThrow);
+            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == userId.Value);
 
         // Phase 1 fallback: the seeded lobby has no members yet; auto-join on first post.
         if (member is null)
@@ -3040,7 +3045,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
             var channelExists = await db.Channels.AnyAsync(c => c.Id == request.ChannelId);
             if (!channelExists) return new SendMessageResponse(false, null, null, "channel_not_found");
 
-            var auto = ChannelMember.Join(request.ChannelId, currentUser.UserIdOrThrow, Attic.Domain.Enums.ChannelRole.Member, clock.UtcNow);
+            var auto = ChannelMember.Join(request.ChannelId, userId.Value, Attic.Domain.Enums.ChannelRole.Member, clock.UtcNow);
             db.ChannelMembers.Add(auto);
             member = auto;
         }
@@ -3048,11 +3053,11 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
         var auth = AuthorizationRules.CanPostInChannel(member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
 
-        var msg = Message.Post(request.ChannelId, currentUser.UserIdOrThrow, request.Content, request.ReplyToId, clock.UtcNow);
+        var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
         await db.SaveChangesAsync();
 
-        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == currentUser.UserIdOrThrow);
+        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
         var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
@@ -3062,7 +3067,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<object> SubscribeToChannel(Guid channelId)
     {
-        if (!currentUser.IsAuthenticated) return new { ok = false, error = "unauthorized" };
+        if (UserId is null) return new { ok = false, error = "unauthorized" };
 
         var channelExists = await db.Channels.AnyAsync(c => c.Id == channelId);
         if (!channelExists) return new { ok = false, error = "channel_not_found" };
