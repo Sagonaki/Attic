@@ -34,6 +34,7 @@ public static class FriendRequestsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        Attic.Api.Hubs.FriendsEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -69,10 +70,12 @@ public static class FriendRequestsEndpoints
         await db.SaveChangesAsync(ct);
 
         var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == senderId, ct);
-        return Results.Ok(new FriendRequestDto(
+        var dto = new FriendRequestDto(
             friendReq.Id, senderId, sender.Username, recipient.Id, recipient.Username,
             friendReq.Text, friendReq.Status.ToString().ToLowerInvariant(),
-            friendReq.CreatedAt, friendReq.DecidedAt));
+            friendReq.CreatedAt, friendReq.DecidedAt);
+        await events.FriendRequestReceived(recipient.Id, dto);
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> ListMine(
@@ -103,6 +106,7 @@ public static class FriendRequestsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        Attic.Api.Hubs.FriendsEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -117,6 +121,7 @@ public static class FriendRequestsEndpoints
         req.Accept(clock.UtcNow);
         db.Friendships.Add(Friendship.Create(req.SenderId, req.RecipientId, clock.UtcNow));
         await db.SaveChangesAsync(ct);
+        await events.FriendRequestDecided(req.SenderId, req.Id, "accepted");
 
         return Results.NoContent();
     }
@@ -126,6 +131,7 @@ public static class FriendRequestsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        Attic.Api.Hubs.FriendsEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -139,6 +145,7 @@ public static class FriendRequestsEndpoints
 
         req.Decline(clock.UtcNow);
         await db.SaveChangesAsync(ct);
+        await events.FriendRequestDecided(req.SenderId, req.Id, "declined");
 
         return Results.NoContent();
     }

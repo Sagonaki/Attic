@@ -52,6 +52,7 @@ public static class UsersEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        Attic.Api.Hubs.FriendsEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -80,6 +81,8 @@ public static class UsersEndpoints
         foreach (var p in pending) p.Cancel(clock.UtcNow);
 
         await db.SaveChangesAsync(ct);
+        await events.Blocked(userId, me);
+        await events.FriendRemoved(me, userId);
         return Results.NoContent();
     }
 

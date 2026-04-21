@@ -44,6 +44,7 @@ public static class FriendsEndpoints
         Guid userId,
         AtticDbContext db,
         CurrentUser currentUser,
+        Attic.Api.Hubs.FriendsEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -57,6 +58,8 @@ public static class FriendsEndpoints
 
         db.Friendships.Remove(friendship);
         await db.SaveChangesAsync(ct);
+        await events.FriendRemoved(me, userId);
+        await events.FriendRemoved(userId, me);
 
         return Results.NoContent();
     }
