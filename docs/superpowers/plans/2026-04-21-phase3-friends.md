@@ -168,7 +168,7 @@ Expected: 0/0.
 - Create: `src/Attic.Domain/Entities/FriendRequest.cs`
 - Create: `tests/Attic.Domain.Tests/FriendRequestTests.cs`
 
-- [ ] **Step 2.1: Write the failing tests — `tests/Attic.Domain.Tests/FriendRequestTests.cs`**
+- [x] **Step 2.1: Write the failing tests — `tests/Attic.Domain.Tests/FriendRequestTests.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -258,7 +258,7 @@ public class FriendRequestTests
 }
 ```
 
-- [ ] **Step 2.2: Run, verify compile failure**
+- [x] **Step 2.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "FriendRequestTests"
@@ -266,7 +266,7 @@ dotnet test tests/Attic.Domain.Tests --filter "FriendRequestTests"
 
 Expected: compile failure — `FriendRequest` does not exist.
 
-- [ ] **Step 2.3: Implement `src/Attic.Domain/Entities/FriendRequest.cs`**
+- [x] **Step 2.3: Implement `src/Attic.Domain/Entities/FriendRequest.cs`**
 
 ```csharp
 using Attic.Domain.Enums;
@@ -320,7 +320,7 @@ public sealed class FriendRequest
 }
 ```
 
-- [ ] **Step 2.4: Run, verify pass**
+- [x] **Step 2.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "FriendRequestTests"
@@ -328,7 +328,7 @@ dotnet test tests/Attic.Domain.Tests --filter "FriendRequestTests"
 
 Expected: 8 passing.
 
-- [ ] **Step 2.5: Commit**
+- [x] **Step 2.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Entities/FriendRequest.cs \
