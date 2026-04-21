@@ -6,3 +6,6 @@ obj/
 .vs/
 TestResults/
 .aspire/
+
+# Local-only NuGet config (e.g., to redirect packages folder around a permission issue).
+NuGet.config
