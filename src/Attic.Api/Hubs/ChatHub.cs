@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Contracts.Attachments;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
@@ -15,7 +16,8 @@ namespace Attic.Api.Hubs;
 public sealed class ChatHub(
     AtticDbContext db,
     IClock clock,
-    IValidator<SendMessageRequest> sendMessageValidator) : Hub
+    IValidator<SendMessageRequest> sendMessageValidator,
+    IValidator<EditMessageRequest> editValidator) : Hub
 {
     public const string Path = "/hub";
 
@@ -84,10 +86,33 @@ public sealed class ChatHub(
 
         var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync();   // Populates message.Id.
+
+        if (request.AttachmentIds is { Length: > 0 })
+        {
+            var attachmentIds = request.AttachmentIds;
+            var attachments = await db.Attachments.AsTracking()
+                .Where(a => attachmentIds.Contains(a.Id)
+                            && a.UploaderId == userId.Value
+                            && a.MessageId == null)
+                .ToListAsync();
+            if (attachments.Count != attachmentIds.Length)
+                return new SendMessageResponse(false, null, null, "invalid_attachments");
+
+            foreach (var a in attachments) a.BindToMessage(msg.Id);
+            await db.SaveChangesAsync();
+        }
 
         var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
-        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null);
+
+        var attachmentDtos = await db.Attachments.AsNoTracking()
+            .Where(a => a.MessageId == msg.Id)
+            .Select(a => new AttachmentDto(
+                a.Id, a.OriginalFileName, a.ContentType, a.SizeBytes, a.Comment))
+            .ToArrayAsync();
+
+        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
+            attachmentDtos.Length > 0 ? attachmentDtos : null);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
@@ -135,6 +160,29 @@ public sealed class ChatHub(
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageDeleted", msg.ChannelId, msg.Id);
         return new { ok = true };
+    }
+
+    public async Task<EditMessageResponse> EditMessage(EditMessageRequest request)
+    {
+        var userId = UserId;
+        if (userId is null) return new EditMessageResponse(false, null, "unauthorized");
+
+        var vr = await editValidator.ValidateAsync(request);
+        if (!vr.IsValid) return new EditMessageResponse(false, null, vr.Errors[0].ErrorCode);
+
+        var msg = await db.Messages.AsTracking().FirstOrDefaultAsync(m => m.Id == request.MessageId);
+        if (msg is null) return new EditMessageResponse(false, null, "not_found");
+
+        var auth = AuthorizationRules.CanEditMessage(msg, userId.Value);
+        if (!auth.Allowed) return new EditMessageResponse(false, null, auth.Reason.ToString());
+
+        msg.Edit(request.Content, clock.UtcNow);
+        await db.SaveChangesAsync();
+
+        await Clients.Group(GroupNames.Channel(msg.ChannelId))
+            .SendAsync("MessageEdited", msg.ChannelId, msg.Id, msg.Content, msg.UpdatedAt);
+
+        return new EditMessageResponse(true, msg.UpdatedAt, null);
     }
 }
 

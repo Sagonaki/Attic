@@ -100,4 +100,41 @@ public sealed class MessagingFlowTests(AppHostFixture fx)
         response.Ok.ShouldBeFalse();
         response.Error.ShouldBe("content_too_large");
     }
+
+    [Fact]
+    public async Task Reply_to_round_trips_through_history()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var handler = new HttpClientHandler { CookieContainer = new System.Net.CookieContainer() };
+        using var client = new HttpClient(handler) { BaseAddress = fx.ApiClient.BaseAddress };
+
+        var email = $"r-{Guid.NewGuid():N}@example.com";
+        var username = $"r{Random.Shared.Next():x}";
+        (await client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest(email, username, "hunter2pw"), ct)).EnsureSuccessStatusCode();
+
+        var createResponse = await client.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest($"reply-{Guid.NewGuid():N}"[..20], null, "public"), ct);
+        var channel = (await createResponse.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var cookieHeader = string.Join("; ",
+            handler.CookieContainer.GetCookies(fx.ApiClient.BaseAddress!).Select(c => $"{c.Name}={c.Value}"));
+        await using var hub = new HubConnectionBuilder()
+            .WithUrl(fx.HubUrl, opts => opts.Headers["Cookie"] = cookieHeader).Build();
+        await hub.StartAsync(ct);
+        await hub.InvokeAsync<JsonElement>("SubscribeToChannel", channel.Id, ct);
+
+        var first = await hub.InvokeAsync<SendMessageResponse>("SendMessage",
+            new SendMessageRequest(channel.Id, Guid.NewGuid(), "original", null), ct);
+        first.Ok.ShouldBeTrue();
+        var firstId = first.ServerId!.Value;
+
+        var reply = await hub.InvokeAsync<SendMessageResponse>("SendMessage",
+            new SendMessageRequest(channel.Id, Guid.NewGuid(), "replying", firstId), ct);
+        reply.Ok.ShouldBeTrue();
+
+        var history = await client.GetAsync($"/api/channels/{channel.Id:D}/messages?limit=10", ct);
+        var page = (await history.Content.ReadFromJsonAsync<PagedResult<MessageDto>>(ct))!;
+        page.Items.ShouldContain(m => m.Content == "replying" && m.ReplyToId == firstId);
+    }
 }

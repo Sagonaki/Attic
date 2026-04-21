@@ -48,10 +48,25 @@ export function useChannelMessages(channelId: string) {
       });
     });
 
+    const offEdited = hub.onMessageEdited((cid, messageId, newContent, updatedAt) => {
+      if (!active || cid !== channelId) return;
+      qc.setQueryData<{ pages: PagedResult<MessageDto>[]; pageParams: unknown[] }>(queryKey, prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          pages: prev.pages.map(p => ({
+            ...p,
+            items: p.items.map(m => m.id === messageId ? { ...m, content: newContent, updatedAt } : m),
+          })),
+        };
+      });
+    });
+
     return () => {
       active = false;
       offCreated();
       offDeleted();
+      offEdited();
       void hub.unsubscribeFromChannel(channelId);
     };
   }, [channelId, qc, queryKey]);

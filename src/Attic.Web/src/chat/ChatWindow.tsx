@@ -3,17 +3,16 @@ import { useParams } from 'react-router-dom';
 import { useChannelMessages } from './useChannelMessages';
 import { useSendMessage } from './useSendMessage';
 import { useDeleteMessage } from './useDeleteMessage';
+import { useEditMessage } from './useEditMessage';
 import { ChatInput } from './ChatInput';
 import { useAuth } from '../auth/useAuth';
+import { AttachmentPreview } from './AttachmentPreview';
+import { MessageActionsMenu } from './MessageActionsMenu';
 
 export function ChatWindow() {
   const { channelId } = useParams<{ channelId: string }>();
   const { user } = useAuth();
-
-  if (!channelId) {
-    return <div className="p-8 text-slate-500">Select a channel on the left to start chatting.</div>;
-  }
-
+  if (!channelId) return <div className="p-8 text-slate-500">Select a channel.</div>;
   return <ChatWindowFor channelId={channelId} user={{ id: user!.id, username: user!.username }} />;
 }
 
@@ -21,7 +20,11 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
   const { items, fetchNextPage, hasNextPage, isFetchingNextPage } = useChannelMessages(channelId);
   const send = useSendMessage(channelId, user);
   const del = useDeleteMessage(channelId);
+  const edit = useEditMessage();
   const [menuMsgId, setMenuMsgId] = useState<number | null>(null);
+  const [replyTo, setReplyTo] = useState<{ messageId: number; snippet: string } | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
 
   const listRef = useRef<HTMLDivElement>(null);
   const lockedToBottom = useRef(true);
@@ -39,6 +42,16 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
   }
 
   const ordered = [...items].reverse();
+  const byId = new Map(ordered.map(m => [m.id, m]));
+
+  async function saveEdit() {
+    if (editingId === null) return;
+    const draft = editDraft.trim();
+    if (!draft) return;
+    try { await edit(editingId, draft); } catch { /* ignore — UI will invalidate */ }
+    setEditingId(null);
+    setEditDraft('');
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -53,30 +66,44 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
                 {m.id < 0 && <span className="ml-2 text-slate-400">sending…</span>}
               </span>
               {m.id > 0 && (
-                <button
-                  onClick={() => setMenuMsgId(menuMsgId === m.id ? null : m.id)}
-                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 px-1"
-                  aria-label="Message actions"
-                >
-                  ⋯
-                </button>
+                <button onClick={() => setMenuMsgId(menuMsgId === m.id ? null : m.id)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 px-1"
+                        aria-label="Message actions">⋯</button>
               )}
             </div>
-            <div className="whitespace-pre-wrap break-words">{m.content}</div>
-            {menuMsgId === m.id && (
-              <div className="absolute right-2 top-8 bg-white border rounded shadow z-10">
-                <button
-                  className="block w-full text-left px-3 py-1 text-sm hover:bg-slate-100 text-red-600"
-                  onClick={() => { void del(m.id); setMenuMsgId(null); }}
-                >
-                  Delete
-                </button>
+            {m.replyToId && byId.get(m.replyToId) && (
+              <div className="text-xs text-slate-500 border-l-2 border-slate-300 pl-2 mb-1">
+                {byId.get(m.replyToId)!.senderUsername}: {byId.get(m.replyToId)!.content.slice(0, 80)}
               </div>
+            )}
+            {editingId === m.id ? (
+              <div className="flex gap-2">
+                <input className="flex-1 border rounded px-2 py-1 text-sm"
+                       value={editDraft} onChange={e => setEditDraft(e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') void saveEdit(); if (e.key === 'Escape') setEditingId(null); }} />
+                <button onClick={saveEdit} className="text-xs text-blue-600">Save</button>
+                <button onClick={() => setEditingId(null)} className="text-xs">Cancel</button>
+              </div>
+            ) : (
+              <>
+                <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                {m.attachments?.map(a => <AttachmentPreview key={a.id} attachment={a} />)}
+              </>
+            )}
+            {menuMsgId === m.id && (
+              <MessageActionsMenu
+                isOwn={m.senderId === user.id}
+                isAdmin={false}
+                onEdit={() => { setEditingId(m.id); setEditDraft(m.content); setMenuMsgId(null); }}
+                onReply={() => { setReplyTo({ messageId: m.id, snippet: m.content.slice(0, 80) }); setMenuMsgId(null); }}
+                onDelete={() => { void del(m.id); setMenuMsgId(null); }}
+                onClose={() => setMenuMsgId(null)}
+              />
             )}
           </div>
         ))}
       </div>
-      <ChatInput onSend={send} />
+      <ChatInput onSend={send} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
     </div>
   );
 }
