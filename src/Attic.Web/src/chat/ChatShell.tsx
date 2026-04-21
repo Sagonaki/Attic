@@ -9,12 +9,14 @@ import { PublicCatalog } from './PublicCatalog';
 import { RoomDetails } from './RoomDetails';
 import { InvitationsInbox } from './InvitationsInbox';
 import { disposeHubClient } from '../api/signalr';
+import { useRemovedFromChannel } from './useRemovedFromChannel';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { channelId } = useParams<{ channelId: string }>();
+  useRemovedFromChannel();
   const [createOpen, setCreateOpen] = useState(false);
 
   async function logout() {
