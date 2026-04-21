@@ -67,4 +67,20 @@ public static class AuthorizationRules
         if (newRole == Enums.ChannelRole.Owner) return AuthorizationResult.Deny(AuthorizationFailureReason.OwnerCannotBeTargeted);
         return AuthorizationResult.Ok();
     }
+
+    public static AuthorizationResult CanDeleteMessage(
+        Message message,
+        Guid actorUserId,
+        ChannelMember? actorMembership,
+        Enums.ChannelKind channelKind)
+    {
+        if (message.SenderId == actorUserId) return AuthorizationResult.Ok();
+        // Room admins (not personal) can delete any message.
+        if (channelKind != Enums.ChannelKind.Personal && actorMembership is not null
+            && actorMembership.BannedAt is null && actorMembership.Role != Enums.ChannelRole.Member)
+        {
+            return AuthorizationResult.Ok();
+        }
+        return AuthorizationResult.Deny(AuthorizationFailureReason.NotAuthor);
+    }
 }

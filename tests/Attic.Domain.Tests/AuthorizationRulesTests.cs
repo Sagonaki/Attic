@@ -238,4 +238,45 @@ public class AuthorizationRulesTests
         AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Admin).Reason
             .ShouldBe(AuthorizationFailureReason.NotAdmin);
     }
+
+    [Fact]
+    public void CanDeleteMessage_author_can_delete_own()
+    {
+        var authorId = Guid.NewGuid();
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, authorId, "hi", null, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actorUserId: authorId, actorMembership: null, channelKind: ChannelKind.Public)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanDeleteMessage_admin_of_room_can_delete_any()
+    {
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, Guid.NewGuid(), "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Public)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanDeleteMessage_personal_channel_has_no_admins()
+    {
+        var channelId = Guid.NewGuid();
+        var authorId = Guid.NewGuid();
+        var message = Message.Post(channelId, authorId, "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Personal).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
+
+    [Fact]
+    public void CanDeleteMessage_non_author_non_admin_denied()
+    {
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, Guid.NewGuid(), "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Public).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
 }
