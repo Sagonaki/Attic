@@ -347,7 +347,7 @@ git commit -m "feat(domain): add FriendRequest entity with state-machine behavio
 
 A `Friendship` is an unordered relationship between two users. We store the canonical form by always putting the smaller `Guid` in `UserAId` and the larger in `UserBId`. The static factory `Create(a, b, now)` does the ordering so callers don't have to.
 
-- [ ] **Step 3.1: Write the failing tests**
+- [x] **Step 3.1: Write the failing tests**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -412,13 +412,13 @@ public class FriendshipTests
 }
 ```
 
-- [ ] **Step 3.2: Run, verify compile failure**
+- [x] **Step 3.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "FriendshipTests"
 ```
 
-- [ ] **Step 3.3: Implement `src/Attic.Domain/Entities/Friendship.cs`**
+- [x] **Step 3.3: Implement `src/Attic.Domain/Entities/Friendship.cs`**
 
 ```csharp
 namespace Attic.Domain.Entities;
@@ -451,7 +451,7 @@ public sealed class Friendship
 }
 ```
 
-- [ ] **Step 3.4: Run, verify pass**
+- [x] **Step 3.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "FriendshipTests"
@@ -459,7 +459,7 @@ dotnet test tests/Attic.Domain.Tests --filter "FriendshipTests"
 
 Expected: 5 passing.
 
-- [ ] **Step 3.5: Commit**
+- [x] **Step 3.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Entities/Friendship.cs \
