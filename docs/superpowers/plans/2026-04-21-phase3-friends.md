@@ -783,7 +783,7 @@ git commit -m "feat(domain): add CanPostInPersonalChat and CanOpenPersonalChat r
 - Create: `src/Attic.Infrastructure/Persistence/Configurations/FriendRequestConfiguration.cs`
 - Modify: `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`
 
-- [ ] **Step 8.1: Write `FriendRequestConfiguration.cs`**
+- [x] **Step 8.1: Write `FriendRequestConfiguration.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -815,7 +815,7 @@ public sealed class FriendRequestConfiguration : IEntityTypeConfiguration<Friend
 }
 ```
 
-- [ ] **Step 8.2: Add `DbSet<FriendRequest>` to `AtticDbContext.cs`**
+- [x] **Step 8.2: Add `DbSet<FriendRequest>` to `AtticDbContext.cs`**
 
 Insert after `DbSet<ChannelInvitation>`:
 
@@ -823,7 +823,7 @@ Insert after `DbSet<ChannelInvitation>`:
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
 ```
 
-- [ ] **Step 8.3: Build + commit**
+- [x] **Step 8.3: Build + commit**
 
 ```bash
 dotnet build src/Attic.Infrastructure
