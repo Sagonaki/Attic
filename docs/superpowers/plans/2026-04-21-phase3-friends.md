@@ -707,7 +707,7 @@ git commit -m "feat(domain): add CanSendFriendRequest rule"
 
 Posting in a personal chat requires a live friendship AND no block in either direction. Opening a personal chat has the same preconditions. They are the same rule — implement one, `CanOpenPersonalChat` delegates to it.
 
-- [ ] **Step 7.1: Append failing tests**
+- [x] **Step 7.1: Append failing tests**
 
 ```csharp
     [Fact]
@@ -745,13 +745,13 @@ Posting in a personal chat requires a live friendship AND no block in either dir
     }
 ```
 
-- [ ] **Step 7.2: Run, verify compile failure**
+- [x] **Step 7.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanPostInPersonalChat|CanOpenPersonalChat"
 ```
 
-- [ ] **Step 7.3: Append methods**
+- [x] **Step 7.3: Append methods**
 
 ```csharp
     public static AuthorizationResult CanPostInPersonalChat(bool areFriends, bool hasBlockInEitherDirection)
@@ -765,7 +765,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanPostInPersonalChat|CanOpenPers
         => CanPostInPersonalChat(areFriends, hasBlockInEitherDirection);
 ```
 
-- [ ] **Step 7.4: Run, verify pass; commit**
+- [x] **Step 7.4: Run, verify pass; commit**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests

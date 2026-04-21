@@ -110,4 +110,14 @@ public static class AuthorizationRules
         if (hasPendingRequest) return AuthorizationResult.Deny(AuthorizationFailureReason.DuplicateFriendRequest);
         return AuthorizationResult.Ok();
     }
+
+    public static AuthorizationResult CanPostInPersonalChat(bool areFriends, bool hasBlockInEitherDirection)
+    {
+        if (hasBlockInEitherDirection) return AuthorizationResult.Deny(AuthorizationFailureReason.BlockedByOrBlockingUser);
+        if (!areFriends) return AuthorizationResult.Deny(AuthorizationFailureReason.NotFriends);
+        return AuthorizationResult.Ok();
+    }
+
+    public static AuthorizationResult CanOpenPersonalChat(bool areFriends, bool hasBlockInEitherDirection)
+        => CanPostInPersonalChat(areFriends, hasBlockInEitherDirection);
 }

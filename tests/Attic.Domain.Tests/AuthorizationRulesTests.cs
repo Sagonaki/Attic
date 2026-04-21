@@ -363,4 +363,38 @@ public class AuthorizationRulesTests
             hasBlockInEitherDirection: true).Reason
             .ShouldBe(AuthorizationFailureReason.BlockedByOrBlockingUser);
     }
+
+    [Fact]
+    public void CanPostInPersonalChat_allows_when_friends_and_no_block()
+    {
+        AuthorizationRules.CanPostInPersonalChat(
+            areFriends: true,
+            hasBlockInEitherDirection: false).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanPostInPersonalChat_denies_when_not_friends()
+    {
+        AuthorizationRules.CanPostInPersonalChat(
+            areFriends: false,
+            hasBlockInEitherDirection: false).Reason
+            .ShouldBe(AuthorizationFailureReason.NotFriends);
+    }
+
+    [Fact]
+    public void CanPostInPersonalChat_denies_when_blocked()
+    {
+        AuthorizationRules.CanPostInPersonalChat(
+            areFriends: true,
+            hasBlockInEitherDirection: true).Reason
+            .ShouldBe(AuthorizationFailureReason.BlockedByOrBlockingUser);
+    }
+
+    [Fact]
+    public void CanOpenPersonalChat_delegates_to_CanPostInPersonalChat()
+    {
+        AuthorizationRules.CanOpenPersonalChat(true, false).Allowed.ShouldBeTrue();
+        AuthorizationRules.CanOpenPersonalChat(false, false).Reason.ShouldBe(AuthorizationFailureReason.NotFriends);
+        AuthorizationRules.CanOpenPersonalChat(true, true).Reason.ShouldBe(AuthorizationFailureReason.BlockedByOrBlockingUser);
+    }
 }
