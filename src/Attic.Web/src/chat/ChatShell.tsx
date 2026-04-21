@@ -11,6 +11,7 @@ import { InvitationsInbox } from './InvitationsInbox';
 import { Contacts } from './Contacts';
 import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
+import { useActivityTracker } from './useActivityTracker';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
@@ -18,6 +19,7 @@ export function ChatShell() {
   const { pathname } = useLocation();
   const { channelId } = useParams<{ channelId: string }>();
   useRemovedFromChannel();
+  useActivityTracker();
   const [createOpen, setCreateOpen] = useState(false);
 
   async function logout() {
