@@ -6,6 +6,41 @@ import { invitationsApi } from '../api/invitations';
 import { useAuth } from '../auth/useAuth';
 import { useChannelDetails } from './useChannelDetails';
 import { useChannelMembers } from './useChannelMembers';
+import { usePresence } from './usePresence';
+import type { ChannelMemberSummary } from '../types';
+
+interface MemberRowProps {
+  m: ChannelMemberSummary;
+  userId: string | undefined;
+  canManage: boolean;
+  toggleRole: { mutate: (args: { userId: string; role: 'admin' | 'member' }) => void };
+  ban: { mutate: (userId: string) => void };
+}
+
+function MemberRow({ m, userId, canManage, toggleRole, ban }: MemberRowProps) {
+  const presence = usePresence(m.userId);
+  const dotColor =
+    presence === 'online' ? 'bg-green-500' :
+    presence === 'afk' ? 'bg-yellow-500' : 'bg-slate-300';
+  return (
+    <li className="flex items-center justify-between">
+      <span className="flex items-center gap-2">
+        <span className={`inline-block w-2 h-2 rounded-full ${dotColor}`} />
+        {m.username}
+        <span className="ml-1 text-xs text-slate-400">{m.role}</span>
+      </span>
+      {canManage && m.userId !== userId && m.role !== 'owner' && (
+        <div className="flex gap-1">
+          <button onClick={() => toggleRole.mutate({ userId: m.userId, role: m.role === 'admin' ? 'member' : 'admin' })}
+                  className="text-xs text-blue-600">
+            {m.role === 'admin' ? 'Demote' : 'Promote'}
+          </button>
+          <button onClick={() => ban.mutate(m.userId)} className="text-xs text-red-600">Ban</button>
+        </div>
+      )}
+    </li>
+  );
+}
 
 export function RoomDetails({ channelId }: { channelId: string }) {
   const { user } = useAuth();
@@ -71,21 +106,14 @@ export function RoomDetails({ channelId }: { channelId: string }) {
         <div className="text-xs font-semibold text-slate-500 uppercase mb-1">Members</div>
         <ul className="space-y-1">
           {members?.map(m => (
-            <li key={m.userId} className="flex items-center justify-between">
-              <span>
-                {m.username}
-                <span className="ml-2 text-xs text-slate-400">{m.role}</span>
-              </span>
-              {canManage && m.userId !== user?.id && m.role !== 'owner' && (
-                <div className="flex gap-1">
-                  <button onClick={() => toggleRole.mutate({ userId: m.userId, role: m.role === 'admin' ? 'member' : 'admin' })}
-                          className="text-xs text-blue-600">
-                    {m.role === 'admin' ? 'Demote' : 'Promote'}
-                  </button>
-                  <button onClick={() => ban.mutate(m.userId)} className="text-xs text-red-600">Ban</button>
-                </div>
-              )}
-            </li>
+            <MemberRow
+              key={m.userId}
+              m={m}
+              userId={user?.id}
+              canManage={canManage}
+              toggleRole={toggleRole}
+              ban={ban}
+            />
           ))}
         </ul>
       </div>
