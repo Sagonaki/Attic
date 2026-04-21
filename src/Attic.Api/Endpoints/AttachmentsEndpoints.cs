@@ -20,7 +20,8 @@ public static class AttachmentsEndpoints
     public static IEndpointRouteBuilder MapAttachmentsEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/attachments").RequireAuthorization();
-        group.MapPost("/", Upload).DisableAntiforgery();
+        group.MapPost("/", Upload).DisableAntiforgery()
+             .RequireRateLimiting(Attic.Api.RateLimiting.RateLimitPolicyNames.UploadFixed);
         group.MapGet("/{id:guid}", Download);
         return routes;
     }

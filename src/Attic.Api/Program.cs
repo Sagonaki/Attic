@@ -4,8 +4,10 @@ using Attic.Infrastructure;
 using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Seed;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,10 +66,40 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .AllowAnyMethod()
     .AllowCredentials()));
 
-builder.WebHost.ConfigureKestrel(k =>
+builder.WebHost.ConfigureKestrel(kestrel =>
 {
-    k.Limits.MaxConcurrentConnections = 2048;
-    k.Limits.MaxConcurrentUpgradedConnections = 2048;
+    kestrel.Limits.MaxRequestBodySize = 25 * 1024 * 1024; // 25 MB (matches attachment 20 MB + multipart overhead)
+    kestrel.Limits.MaxConcurrentConnections = 1000;
+    kestrel.Limits.MaxConcurrentUpgradedConnections = 2048;
+    kestrel.Limits.MinRequestBodyDataRate =
+        new Microsoft.AspNetCore.Server.Kestrel.Core.MinDataRate(bytesPerSecond: 240, gracePeriod: TimeSpan.FromSeconds(5));
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.UploadFixed, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.RejectionStatusCode = 429;
 });
 
 var app = builder.Build();
@@ -75,6 +107,7 @@ var app = builder.Build();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
