@@ -1458,7 +1458,7 @@ git commit -m "fix(api): require channel membership to read message history"
 
 All are `sealed record` types under their respective subfolders.
 
-- [ ] **Step 16.1: Write `Channels/UserSummary.cs`**
+- [x] **Step 16.1: Write `Channels/UserSummary.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1466,7 +1466,7 @@ namespace Attic.Contracts.Channels;
 public sealed record UserSummary(Guid Id, string Username);
 ```
 
-- [ ] **Step 16.2: Write `Channels/ChannelSummary.cs`**
+- [x] **Step 16.2: Write `Channels/ChannelSummary.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1481,7 +1481,7 @@ public sealed record ChannelSummary(
     int UnreadCount);
 ```
 
-- [ ] **Step 16.3: Write `Channels/ChannelDetails.cs`**
+- [x] **Step 16.3: Write `Channels/ChannelDetails.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1496,7 +1496,7 @@ public sealed record ChannelDetails(
     int MemberCount);
 ```
 
-- [ ] **Step 16.4: Write `Channels/CreateChannelRequest.cs`**
+- [x] **Step 16.4: Write `Channels/CreateChannelRequest.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1504,7 +1504,7 @@ namespace Attic.Contracts.Channels;
 public sealed record CreateChannelRequest(string Name, string? Description, string Kind);
 ```
 
-- [ ] **Step 16.5: Write `Channels/UpdateChannelRequest.cs`**
+- [x] **Step 16.5: Write `Channels/UpdateChannelRequest.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1512,7 +1512,7 @@ namespace Attic.Contracts.Channels;
 public sealed record UpdateChannelRequest(string? Name, string? Description);
 ```
 
-- [ ] **Step 16.6: Write `Channels/ChannelMemberSummary.cs`**
+- [x] **Step 16.6: Write `Channels/ChannelMemberSummary.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1524,7 +1524,7 @@ public sealed record ChannelMemberSummary(
     DateTimeOffset JoinedAt);
 ```
 
-- [ ] **Step 16.7: Write `Channels/BannedMemberSummary.cs`**
+- [x] **Step 16.7: Write `Channels/BannedMemberSummary.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1538,7 +1538,7 @@ public sealed record BannedMemberSummary(
     string? Reason);
 ```
 
-- [ ] **Step 16.8: Write `Channels/ChangeRoleRequest.cs`**
+- [x] **Step 16.8: Write `Channels/ChangeRoleRequest.cs`**
 
 ```csharp
 namespace Attic.Contracts.Channels;
@@ -1546,7 +1546,7 @@ namespace Attic.Contracts.Channels;
 public sealed record ChangeRoleRequest(string Role);   // "admin" | "member"
 ```
 
-- [ ] **Step 16.9: Write `Invitations/InvitationDto.cs`**
+- [x] **Step 16.9: Write `Invitations/InvitationDto.cs`**
 
 ```csharp
 namespace Attic.Contracts.Invitations;
@@ -1562,7 +1562,7 @@ public sealed record InvitationDto(
     DateTimeOffset? DecidedAt);
 ```
 
-- [ ] **Step 16.10: Write `Invitations/InviteToChannelRequest.cs`**
+- [x] **Step 16.10: Write `Invitations/InviteToChannelRequest.cs`**
 
 ```csharp
 namespace Attic.Contracts.Invitations;
@@ -1570,7 +1570,7 @@ namespace Attic.Contracts.Invitations;
 public sealed record InviteToChannelRequest(string Username);
 ```
 
-- [ ] **Step 16.11: Build + commit**
+- [x] **Step 16.11: Build + commit**
 
 ```bash
 dotnet build src/Attic.Contracts
