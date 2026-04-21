@@ -15,10 +15,10 @@ public static class AuthExtensions
         return services;
     }
 
-    public static CookieOptions CreateSessionCookieOptions(DateTimeOffset expiresAt) => new()
+    public static CookieOptions CreateSessionCookieOptions(HttpRequest request, DateTimeOffset expiresAt) => new()
     {
         HttpOnly = true,
-        Secure = false,  // Phase 1: HTTP dev environment; set to true for HTTPS in production
+        Secure = request.IsHttps,   // tracks the request scheme: false for dev HTTP, true for prod HTTPS
         SameSite = SameSiteMode.Lax,
         Path = "/",
         Expires = expiresAt

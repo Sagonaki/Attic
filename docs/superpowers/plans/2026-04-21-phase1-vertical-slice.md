@@ -2508,10 +2508,10 @@ public static class AuthExtensions
         return services;
     }
 
-    public static CookieOptions CreateSessionCookieOptions(DateTimeOffset expiresAt) => new()
+    public static CookieOptions CreateSessionCookieOptions(HttpRequest request, DateTimeOffset expiresAt) => new()
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = request.IsHttps,   // tracks the request scheme: false for dev HTTP, true for prod HTTPS
         SameSite = SameSiteMode.Lax,
         Path = "/",
         Expires = expiresAt
@@ -2773,7 +2773,7 @@ public static class AuthEndpoints
 
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 
@@ -2801,7 +2801,7 @@ public static class AuthEndpoints
         db.Sessions.Add(session);
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 

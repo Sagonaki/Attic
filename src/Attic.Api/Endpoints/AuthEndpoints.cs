@@ -55,7 +55,7 @@ public static class AuthEndpoints
 
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 
@@ -83,7 +83,7 @@ public static class AuthEndpoints
         db.Sessions.Add(session);
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 
