@@ -1,8 +1,5 @@
 import type { ApiError } from '../types';
 
-const _base = import.meta.env.VITE_API_BASE ?? '/';
-void _base; // kept for future cross-origin use; Phase 1 uses same-origin proxying
-
 async function handle<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
   const body = await response.text();
