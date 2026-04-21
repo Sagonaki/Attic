@@ -941,7 +941,7 @@ git commit -m "feat(infra): add UserBlock EF Core configuration"
 - Generated: `src/Attic.Infrastructure/Persistence/Migrations/*_AddFriendsAndBlocks.cs`
 - Updated: `src/Attic.Infrastructure/Persistence/Migrations/AtticDbContextModelSnapshot.cs`
 
-- [ ] **Step 11.1: Generate**
+- [x] **Step 11.1: Generate**
 
 ```bash
 dotnet tool run dotnet-ef migrations add AddFriendsAndBlocks \
@@ -950,7 +950,7 @@ dotnet tool run dotnet-ef migrations add AddFriendsAndBlocks \
   --output-dir Persistence/Migrations
 ```
 
-- [ ] **Step 11.2: Sanity-check the idempotent script**
+- [x] **Step 11.2: Sanity-check the idempotent script**
 
 ```bash
 dotnet tool run dotnet-ef migrations script --project src/Attic.Infrastructure \
@@ -969,7 +969,7 @@ Must contain:
 
 If any filter clause reads `WHERE "Status" = 0` or any column appears quoted in a raw SQL string — STOP, that's the snake-case-raw-SQL bug. Fix the configuration (quote-free `status` in `HasFilter`) and regenerate.
 
-- [ ] **Step 11.3: Build + commit**
+- [x] **Step 11.3: Build + commit**
 
 ```bash
 dotnet build Attic.slnx
