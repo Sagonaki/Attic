@@ -28,6 +28,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR(o =>
 {
     o.MaximumReceiveMessageSize = 64 * 1024;
+    o.AddFilter<Attic.Api.Hubs.GlobalHubFilter>();
 }).AddHubOptions<Attic.Api.Hubs.ChatHub>(o =>
 {
     o.AddFilter(typeof(Attic.Api.Hubs.ChatHubFilter));
@@ -35,6 +36,8 @@ builder.Services.AddSignalR(o =>
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
+// GlobalHubFilter is stateless (only ILogger) — singleton is correct.
+builder.Services.AddSingleton<Attic.Api.Hubs.GlobalHubFilter>();
 builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();
