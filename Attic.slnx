@@ -4,5 +4,6 @@
     <Project Path="src/Attic.Contracts/Attic.Contracts.csproj" />
     <Project Path="src/Attic.Domain/Attic.Domain.csproj" />
     <Project Path="src/Attic.Infrastructure/Attic.Infrastructure.csproj" />
+    <Project Path="src/Attic.ServiceDefaults/Attic.ServiceDefaults.csproj" />
   </Folder>
 </Solution>
