@@ -70,13 +70,16 @@ public sealed class ChatHub(
 
     public async Task<object> SubscribeToChannel(Guid channelId)
     {
-        if (UserId is null) return new { ok = false, error = "unauthorized" };
+        var userId = UserId;
+        if (userId is null) return new { ok = false, error = "unauthorized" };
 
         var channelExists = await db.Channels.AnyAsync(c => c.Id == channelId);
         if (!channelExists) return new { ok = false, error = "channel_not_found" };
 
-        // Phase 1: any authenticated user may subscribe to any existing channel.
-        // Phase 2 replaces this with a membership check.
+        var isMember = await db.ChannelMembers.AsNoTracking()
+            .AnyAsync(m => m.ChannelId == channelId && m.UserId == userId.Value);
+        if (!isMember) return new { ok = false, error = "not_a_member" };
+
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Channel(channelId));
         return new { ok = true };
     }
