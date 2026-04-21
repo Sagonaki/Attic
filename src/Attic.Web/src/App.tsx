@@ -13,6 +13,9 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route element={<AuthGate />}>
           <Route path="/" element={<ChatShell />} />
+          <Route path="/chat/:channelId" element={<ChatShell />} />
+          <Route path="/catalog" element={<ChatShell />} />
+          <Route path="/invitations" element={<ChatShell />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
