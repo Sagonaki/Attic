@@ -79,7 +79,8 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed, ctx =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            // Partition by IP + User-Agent so integration-test clients (which set unique UAs) get isolated buckets.
+            partitionKey: $"{ctx.Connection.RemoteIpAddress}|{ctx.Request.Headers.UserAgent}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 5,
