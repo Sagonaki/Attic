@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Attic.Contracts.Auth;
 using Attic.Contracts.Channels;
 using Attic.Contracts.Common;
@@ -58,6 +59,40 @@ public sealed class ChannelCrudFlowTests(AppHostFixture fx)
         var err = await response.Content.ReadFromJsonAsync<ApiError>(ct);
         err.ShouldNotBeNull();
         err!.Code.ShouldBe("invalid_kind");
+    }
+
+    [Fact]
+    public async Task Public_catalog_lists_created_public_channels()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (client, _) = await RegisterFresh(ct);
+
+        var name = $"cat-{Guid.NewGuid():N}"[..20];
+        (await client.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest(name, "catalog-test", "public"), ct)).EnsureSuccessStatusCode();
+
+        var response = await client.GetAsync($"/api/channels/public?search={name[..8]}&limit=50", ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<JsonElement>>(ct);
+        body.ShouldNotBeNull();
+        body!.Items.ShouldContain(i => i.GetProperty("name").GetString() == name);
+    }
+
+    [Fact]
+    public async Task Public_catalog_excludes_private_channels()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (client, _) = await RegisterFresh(ct);
+
+        var privateName = $"priv-{Guid.NewGuid():N}"[..20];
+        (await client.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest(privateName, null, "private"), ct)).EnsureSuccessStatusCode();
+
+        var response = await client.GetAsync($"/api/channels/public?search={privateName[..8]}", ct);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<PagedResult<JsonElement>>(ct);
+        body.ShouldNotBeNull();
+        body!.Items.ShouldBeEmpty();
     }
 
     internal async Task<(HttpClient Client, string Username)> RegisterFresh(CancellationToken ct)

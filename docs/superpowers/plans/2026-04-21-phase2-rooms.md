@@ -1920,7 +1920,7 @@ git commit -m "feat(api): POST /api/channels creates a room and makes the caller
 
 Keyset-paginated catalog of public channels, filtered by name prefix. Uses the filtered unique index `ux_channels_name_not_personal` on `(name)` where `kind <> 2 AND deleted_at IS NULL` — the `INCLUDE (description, kind)` clause means the catalog query returns from the index without heap access.
 
-- [ ] **Step 19.1: Append `GetPublicCatalog` to `ChannelsEndpoints.cs`**
+- [x] **Step 19.1: Append `GetPublicCatalog` to `ChannelsEndpoints.cs`**
 
 In `MapChannelsEndpoints`, before `return routes;`, add:
 
@@ -1982,7 +1982,7 @@ Append the handler method inside the class (after `CreateChannel`):
     }
 ```
 
-- [ ] **Step 19.2: Append integration tests to `ChannelCrudFlowTests.cs`**
+- [x] **Step 19.2: Append integration tests to `ChannelCrudFlowTests.cs`**
 
 Inside the class, add:
 
@@ -2024,7 +2024,7 @@ Inside the class, add:
 
 Add `using System.Text.Json;` at the top if missing.
 
-- [ ] **Step 19.3: Run + commit**
+- [x] **Step 19.3: Run + commit**
 
 ```bash
 export DOCKER_HOST=unix:///var/folders/32/wf0lxrcx6fzgd284x_b2wgf80000gn/T/podman/podman-machine-default-api.sock
