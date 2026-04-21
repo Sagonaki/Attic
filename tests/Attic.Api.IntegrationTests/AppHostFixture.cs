@@ -38,8 +38,13 @@ public sealed class AppHostFixture : IAsyncLifetime
         // Poll until the API is actually accepting TCP connections.
         // KnownResourceStates.Running fires when the container starts, not when
         // the ASP.NET process inside is bound and listening.
-        using var warmup = new HttpClient { BaseAddress = ApiClient.BaseAddress };
-        var deadline = DateTimeOffset.UtcNow.AddMinutes(2);
+        using var warmup = new HttpClient
+        {
+            BaseAddress = ApiClient.BaseAddress,
+            Timeout = TimeSpan.FromSeconds(5),   // fail fast so we retry quickly
+        };
+        var deadline = DateTimeOffset.UtcNow.AddMinutes(3);
+        var ready = false;
         while (DateTimeOffset.UtcNow < deadline)
         {
             try
@@ -47,13 +52,18 @@ public sealed class AppHostFixture : IAsyncLifetime
                 var resp = await warmup.GetAsync("/api/auth/me");
                 // Any HTTP response (including 401) means the API is up.
                 _ = resp;
+                ready = true;
                 break;
             }
-            catch (HttpRequestException)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
                 await Task.Delay(TimeSpan.FromSeconds(2));
             }
         }
+
+        if (!ready)
+            throw new InvalidOperationException(
+                "API did not respond within 3 minutes after reaching Running state.");
     }
 
     public async ValueTask DisposeAsync()
