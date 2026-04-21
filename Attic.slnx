@@ -8,6 +8,7 @@
     <Project Path="src/Attic.ServiceDefaults/Attic.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Attic.Api.IntegrationTests/Attic.Api.IntegrationTests.csproj" />
     <Project Path="tests/Attic.Domain.Tests/Attic.Domain.Tests.csproj" />
   </Folder>
 </Solution>
