@@ -13,6 +13,7 @@ import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
 import { Sessions } from '../auth/Sessions';
+import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
@@ -22,6 +23,7 @@ export function ChatShell() {
   useRemovedFromChannel();
   useActivityTracker();
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function logout() {
     try { await api.post<void>('/api/auth/logout'); } catch { /* ignore */ }
@@ -37,6 +39,7 @@ export function ChatShell() {
         <div className="text-sm text-slate-600">
           {user?.username}
           <button onClick={logout} className="ml-4 text-blue-600">Sign out</button>
+          <button onClick={() => setDeleteOpen(true)} className="ml-4 text-red-600">Delete account</button>
         </div>
       </header>
       <div className="flex-1 flex overflow-hidden">
@@ -55,6 +58,7 @@ export function ChatShell() {
         </main>
       </div>
       {createOpen && <CreateRoomModal onClose={() => setCreateOpen(false)} />}
+      {deleteOpen && <DeleteAccountModal onClose={() => setDeleteOpen(false)} />}
     </div>
   );
 }
