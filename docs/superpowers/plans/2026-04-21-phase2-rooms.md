@@ -1596,7 +1596,7 @@ Rules (from spec §4.1 and §8.4):
 - Role (`ChangeRoleRequest`): `admin` or `member`. `owner` is forbidden (enforced domain-side too).
 - Username (`InviteToChannelRequest`): non-empty, matches user username regex.
 
-- [ ] **Step 17.1: Write `CreateChannelRequestValidator.cs`**
+- [x] **Step 17.1: Write `CreateChannelRequestValidator.cs`**
 
 ```csharp
 using Attic.Contracts.Channels;
@@ -1617,7 +1617,7 @@ public sealed class CreateChannelRequestValidator : AbstractValidator<CreateChan
 }
 ```
 
-- [ ] **Step 17.2: Write `UpdateChannelRequestValidator.cs`**
+- [x] **Step 17.2: Write `UpdateChannelRequestValidator.cs`**
 
 ```csharp
 using Attic.Contracts.Channels;
@@ -1637,7 +1637,7 @@ public sealed class UpdateChannelRequestValidator : AbstractValidator<UpdateChan
 }
 ```
 
-- [ ] **Step 17.3: Write `ChangeRoleRequestValidator.cs`**
+- [x] **Step 17.3: Write `ChangeRoleRequestValidator.cs`**
 
 ```csharp
 using Attic.Contracts.Channels;
@@ -1656,7 +1656,7 @@ public sealed class ChangeRoleRequestValidator : AbstractValidator<ChangeRoleReq
 }
 ```
 
-- [ ] **Step 17.4: Write `InviteToChannelRequestValidator.cs`**
+- [x] **Step 17.4: Write `InviteToChannelRequestValidator.cs`**
 
 ```csharp
 using Attic.Contracts.Invitations;
@@ -1676,7 +1676,7 @@ public sealed class InviteToChannelRequestValidator : AbstractValidator<InviteTo
 }
 ```
 
-- [ ] **Step 17.5: Build + commit**
+- [x] **Step 17.5: Build + commit**
 
 ```bash
 dotnet build src/Attic.Api
