@@ -8,4 +8,5 @@ public sealed record MessageDto(
     string Content,
     long? ReplyToId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt);
+    DateTimeOffset? UpdatedAt,
+    Attic.Contracts.Attachments.AttachmentDto[]? Attachments = null);
