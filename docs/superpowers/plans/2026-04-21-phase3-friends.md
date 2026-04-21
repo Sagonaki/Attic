@@ -136,7 +136,7 @@ Four checkpoints map onto the review cycle:
 **Files:**
 - Create: `src/Attic.Domain/Enums/FriendRequestStatus.cs`
 
-- [ ] **Step 1.1: Write `FriendRequestStatus.cs`**
+- [x] **Step 1.1: Write `FriendRequestStatus.cs`**
 
 ```csharp
 namespace Attic.Domain.Enums;
@@ -150,7 +150,7 @@ public enum FriendRequestStatus
 }
 ```
 
-- [ ] **Step 1.2: Build + commit**
+- [x] **Step 1.2: Build + commit**
 
 ```bash
 dotnet build src/Attic.Domain
