@@ -51,4 +51,39 @@ public sealed class MembershipFlowTests(AppHostFixture fx)
         var err = await join.Content.ReadFromJsonAsync<ApiError>(ct);
         err!.Code.ShouldBe("CannotAutoJoinPrivate");
     }
+
+    [Fact]
+    public async Task Leave_channel_removes_membership()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (owner, _, _) = await Register(ct);
+        var create = await owner.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest($"lv-{Guid.NewGuid():N}"[..20], null, "public"), ct);
+        var channel = (await create.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var (joiner, _, _) = await Register(ct);
+        (await joiner.PostAsync($"/api/channels/{channel.Id:D}/join", null, ct)).EnsureSuccessStatusCode();
+
+        var leave = await joiner.PostAsync($"/api/channels/{channel.Id:D}/leave", null, ct);
+        leave.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var mine = await joiner.GetAsync("/api/channels/mine", ct);
+        var body = await mine.Content.ReadFromJsonAsync<List<JsonElement>>(ct);
+        body!.ShouldNotContain(c => c.GetProperty("id").GetGuid() == channel.Id);
+    }
+
+    [Fact]
+    public async Task Owner_cannot_leave_their_own_room()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (owner, _, _) = await Register(ct);
+        var create = await owner.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest($"own-{Guid.NewGuid():N}"[..20], null, "public"), ct);
+        var channel = (await create.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var leave = await owner.PostAsync($"/api/channels/{channel.Id:D}/leave", null, ct);
+        leave.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var err = await leave.Content.ReadFromJsonAsync<ApiError>(ct);
+        err!.Code.ShouldBe("OwnerCannotLeave");
+    }
 }

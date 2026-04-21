@@ -26,6 +26,7 @@ public static class ChannelsEndpoints
         group.MapPatch("/{id:guid}", UpdateChannel);
         group.MapDelete("/{id:guid}", DeleteChannel);
         group.MapPost("/{id:guid}/join", JoinChannel);
+        group.MapPost("/{id:guid}/leave", LeaveChannel);
 
         return routes;
     }
@@ -249,6 +250,27 @@ public static class ChannelsEndpoints
 
         var member = ChannelMember.Join(id, userId, ChannelRole.Member, clock.UtcNow);
         db.ChannelMembers.Add(member);
+        await db.SaveChangesAsync(ct);
+
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> LeaveChannel(
+        Guid id,
+        AtticDbContext db,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var userId = currentUser.UserIdOrThrow;
+        var member = await db.ChannelMembers.AsTracking()
+            .FirstOrDefaultAsync(m => m.ChannelId == id && m.UserId == userId, ct);
+
+        var auth = Attic.Domain.Services.AuthorizationRules.CanLeaveChannel(member);
+        if (!auth.Allowed) return Results.BadRequest(new ApiError(auth.Reason.ToString(), "Cannot leave channel."));
+
+        db.ChannelMembers.Remove(member!);
         await db.SaveChangesAsync(ct);
 
         return Results.NoContent();

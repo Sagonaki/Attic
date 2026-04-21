@@ -2505,13 +2505,13 @@ git commit -m "feat(api): POST /api/channels/{id}/join (public rooms)"
 - Modify: `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/MembershipFlowTests.cs`
 
-- [ ] **Step 24.1: Append route**
+- [x] **Step 24.1: Append route**
 
 ```csharp
         group.MapPost("/{id:guid}/leave", LeaveChannel);
 ```
 
-- [ ] **Step 24.2: Append handler**
+- [x] **Step 24.2: Append handler**
 
 ```csharp
     private static async Task<IResult> LeaveChannel(
@@ -2536,7 +2536,7 @@ git commit -m "feat(api): POST /api/channels/{id}/join (public rooms)"
     }
 ```
 
-- [ ] **Step 24.3: Append tests**
+- [x] **Step 24.3: Append tests**
 
 ```csharp
     [Fact]
@@ -2575,7 +2575,7 @@ git commit -m "feat(api): POST /api/channels/{id}/join (public rooms)"
     }
 ```
 
-- [ ] **Step 24.4: Run + commit**
+- [x] **Step 24.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "MembershipFlowTests"
