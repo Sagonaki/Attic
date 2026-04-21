@@ -4,8 +4,10 @@ using Attic.Infrastructure;
 using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Seed;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR(o =>
 {
     o.MaximumReceiveMessageSize = 64 * 1024;
+    o.AddFilter<Attic.Api.Hubs.GlobalHubFilter>();
 }).AddHubOptions<Attic.Api.Hubs.ChatHub>(o =>
 {
     o.AddFilter(typeof(Attic.Api.Hubs.ChatHubFilter));
@@ -35,6 +38,10 @@ builder.Services.AddSignalR(o =>
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
+// GlobalHubFilter is stateless (only ILogger) — singleton is correct.
+builder.Services.AddSingleton<Attic.Api.Hubs.GlobalHubFilter>();
+// HubRateLimiter holds in-memory per-user queues — must be singleton.
+builder.Services.AddSingleton<Attic.Api.RateLimiting.HubRateLimiter>();
 builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();
@@ -59,17 +66,57 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .AllowAnyMethod()
     .AllowCredentials()));
 
-builder.WebHost.ConfigureKestrel(k =>
+builder.WebHost.ConfigureKestrel(kestrel =>
 {
-    k.Limits.MaxConcurrentConnections = 2048;
-    k.Limits.MaxConcurrentUpgradedConnections = 2048;
+    kestrel.Limits.MaxRequestBodySize = 25 * 1024 * 1024; // 25 MB (matches attachment 20 MB + multipart overhead)
+    kestrel.Limits.MaxConcurrentConnections = 1000;
+    kestrel.Limits.MaxConcurrentUpgradedConnections = 2048;
+    kestrel.Limits.MinRequestBodyDataRate =
+        new Microsoft.AspNetCore.Server.Kestrel.Core.MinDataRate(bytesPerSecond: 240, gracePeriod: TimeSpan.FromSeconds(5));
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            // Partition by IP + User-Agent so integration-test clients (which set unique UAs) get isolated buckets.
+            partitionKey: $"{ctx.Connection.RemoteIpAddress}|{ctx.Request.Headers.UserAgent}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.UploadFixed, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+
+    options.RejectionStatusCode = 429;
 });
 
 var app = builder.Build();
 
+app.UseMiddleware<Attic.Api.Security.SecurityHeadersMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapDefaultEndpoints();
 app.MapOpenApi();
@@ -86,6 +133,7 @@ app.MapUsersEndpoints();
 app.MapPersonalChatsEndpoints();
 app.MapAttachmentsEndpoints();
 app.MapSessionsEndpoints();
+app.MapAdminEndpoints();
 app.MapHub<Attic.Api.Hubs.ChatHub>(Attic.Api.Hubs.ChatHub.Path).RequireAuthorization();
 
 // Apply migrations + seed on startup (Phase 1; production uses a separate migration job later).

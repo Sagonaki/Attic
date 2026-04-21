@@ -2,6 +2,7 @@ using Attic.Api.Auth;
 using Attic.Api.Hubs;
 using Attic.Contracts.Sessions;
 using Attic.Domain.Abstractions;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -49,6 +50,7 @@ public static class SessionsEndpoints
         IClock clock,
         CurrentUser currentUser,
         SessionsEventBroadcaster events,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -60,6 +62,11 @@ public static class SessionsEndpoints
         if (session.RevokedAt is not null) return Results.NoContent();
 
         session.Revoke(clock.UtcNow);
+        audit.Add(
+            action: "session.revoke",
+            actorUserId: userId,
+            targetUserId: userId,
+            dataJson: $"{{\"sessionId\":\"{id:D}\"}}");
         await db.SaveChangesAsync(ct);
 
         await events.ForceLogout(id);

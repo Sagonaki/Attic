@@ -62,11 +62,18 @@ export function useChannelMessages(channelId: string) {
       });
     });
 
+    const offReconnect = hub.onReconnected(() => {
+      if (!active) return;
+      void hub.subscribeToChannel(channelId);
+      void qc.invalidateQueries({ queryKey });
+    });
+
     return () => {
       active = false;
       offCreated();
       offDeleted();
       offEdited();
+      offReconnect();
       void hub.unsubscribeFromChannel(channelId);
     };
   }, [channelId, qc, queryKey]);

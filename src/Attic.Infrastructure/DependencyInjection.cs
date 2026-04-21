@@ -1,5 +1,6 @@
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Auth;
 using Attic.Infrastructure.Clock;
 using Attic.Infrastructure.Persistence;
@@ -33,11 +34,16 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString(connectionName)
             ?? throw new InvalidOperationException($"Connection string '{connectionName}' was not found.");
 
+        builder.Services.AddScoped<AuditLogContext>();
+        builder.Services.AddScoped<AuditLogInterceptor>();
+
         builder.Services.AddDbContext<AtticDbContext>((sp, options) =>
         {
             options.UseNpgsql(connectionString);
             options.UseSnakeCaseNamingConvention();
-            options.AddInterceptors(sp.GetRequiredService<TimestampInterceptor>());
+            options.AddInterceptors(
+                sp.GetRequiredService<TimestampInterceptor>(),
+                sp.GetRequiredService<AuditLogInterceptor>());
         });
         builder.EnrichNpgsqlDbContext<AtticDbContext>();
         return builder;

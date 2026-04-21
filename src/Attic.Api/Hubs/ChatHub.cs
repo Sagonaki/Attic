@@ -1,9 +1,11 @@
 using Attic.Api.Auth;
+using Attic.Api.RateLimiting;
 using Attic.Contracts.Attachments;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
 using Attic.Domain.Services;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +20,9 @@ public sealed class ChatHub(
     IClock clock,
     IValidator<SendMessageRequest> sendMessageValidator,
     IValidator<EditMessageRequest> editValidator,
-    Attic.Infrastructure.Presence.IPresenceStore presenceStore) : Hub
+    Attic.Infrastructure.Presence.IPresenceStore presenceStore,
+    AuditLogContext audit,
+    HubRateLimiter rateLimiter) : Hub
 {
     public const string Path = "/hub";
 
@@ -56,6 +60,9 @@ public sealed class ChatHub(
     {
         var userId = UserId;
         if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
+
+        if (!rateLimiter.TryAcquire(userId.Value, clock.UtcNow))
+            return new SendMessageResponse(false, null, null, "rate_limited");
 
         var validation = await sendMessageValidator.ValidateAsync(request);
         if (!validation.IsValid)
@@ -185,6 +192,15 @@ public sealed class ChatHub(
         if (!auth.Allowed) return new { ok = false, error = auth.Reason.ToString() };
 
         msg.SoftDelete(clock.UtcNow);
+        if (msg.SenderId != userId.Value)
+        {
+            audit.Add(
+                action: "message.admin_delete",
+                actorUserId: userId.Value,
+                targetChannelId: msg.ChannelId,
+                targetUserId: msg.SenderId,
+                targetMessageId: msg.Id);
+        }
         await db.SaveChangesAsync();
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageDeleted", msg.ChannelId, msg.Id);

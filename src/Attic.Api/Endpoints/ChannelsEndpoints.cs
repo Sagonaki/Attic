@@ -5,6 +5,7 @@ using Attic.Contracts.Common;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
 using Attic.Domain.Enums;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
@@ -303,6 +304,7 @@ public static class ChannelsEndpoints
         IClock clock,
         CurrentUser currentUser,
         ChannelEventBroadcaster events,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -314,6 +316,10 @@ public static class ChannelsEndpoints
         if (!auth.Allowed) return Results.Forbid();
 
         channel.SoftDelete(clock.UtcNow);
+        audit.Add(
+            action: "channel.delete",
+            actorUserId: currentUser.UserIdOrThrow,
+            targetChannelId: id);
         await db.SaveChangesAsync(ct);
 
         await events.ChannelDeleted(channel.Id);
