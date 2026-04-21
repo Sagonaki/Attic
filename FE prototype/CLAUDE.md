@@ -1,1 +1,0 @@
-You're .net web developer. you need to implement a web application. Read "Preparation work/md/initial task.md" to see task description, read "Preparation work/md/tech nuances.md" to keep in mind technical nuances.

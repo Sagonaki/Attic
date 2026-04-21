@@ -181,19 +181,19 @@ Expected: `Attic.slnx` is created.
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AspireVersion>9.1.0</AspireVersion>
-    <EfCoreVersion>10.0.0</EfCoreVersion>
+    <AspireVersion>13.2.2</AspireVersion>
+    <EfCoreVersion>10.0.5</EfCoreVersion>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Aspire -->
+    <!-- Aspire (use the latest 13.x your NuGet feed has; pin to a known-working combo) -->
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
-    <PackageVersion Include="Aspire.Hosting.NodeJs" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="$(AspireVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="$(AspireVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
 
     <!-- ASP.NET Core / EF Core -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
@@ -571,14 +571,14 @@ dotnet sln Attic.slnx add src/Attic.AppHost/Attic.AppHost.csproj
 If `aspire-apphost` template is not installed, install it first:
 
 ```bash
-dotnet new install Aspire.ProjectTemplates::9.1.0
+dotnet new install Aspire.ProjectTemplates::13.2.2
 ```
 
 - [ ] **Step 7.2: Replace `Attic.AppHost.csproj` contents**
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.1.0" />
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.2.2" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsAspireHost>true</IsAspireHost>
@@ -588,7 +588,7 @@ dotnet new install Aspire.ProjectTemplates::9.1.0
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Redis" />
-    <PackageReference Include="Aspire.Hosting.NodeJs" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Attic.Api\Attic.Api.csproj" />
@@ -614,11 +614,9 @@ var api = builder.AddProject<Projects.Attic_Api>("api")
     .WaitFor(postgres)
     .WaitFor(redis);
 
-builder.AddNpmApp("web", "../Attic.Web", "dev")
+builder.AddViteApp("web", "../Attic.Web")
     .WithReference(api)
-    .WithHttpEndpoint(port: 3000, env: "PORT")
-    .WithExternalHttpEndpoints()
-    .PublishAsDockerFile();
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
 ```
@@ -629,9 +627,9 @@ builder.Build().Run();
 dotnet build src/Attic.AppHost/Attic.AppHost.csproj
 ```
 
-Expected: Build fails because `Attic.Web` directory does not exist yet — that's fine; we will create it next. Build the AppHost again after Task 8. Temporarily comment out the `AddNpmApp(...)` call to get a green build here, then restore it in Task 8.
+Expected: Build fails because `Attic.Web` directory does not exist yet — that's fine; we will create it next. Build the AppHost again after Task 8. Temporarily comment out the `AddViteApp(...)` call to get a green build here, then restore it in Task 8.
 
-- [ ] **Step 7.5: Commit (with Npm block commented out)**
+- [ ] **Step 7.5: Commit (with Vite block commented out)**
 
 ```bash
 git add src/Attic.AppHost Attic.slnx
@@ -702,9 +700,9 @@ cd src/Attic.Web && npm install && cd -
 
 Expected: `npm install` completes without errors.
 
-- [ ] **Step 8.4: Uncomment the `AddNpmApp` block in `src/Attic.AppHost/Program.cs`**
+- [ ] **Step 8.4: Uncomment the `AddViteApp` block in `src/Attic.AppHost/Program.cs`**
 
-Restore the `builder.AddNpmApp("web", "../Attic.Web", "dev")…` call from Task 7 if it was commented out.
+Restore the `builder.AddViteApp("web", "../Attic.Web")…` call from Task 7 if it was commented out.
 
 - [ ] **Step 8.5: Build**
 
@@ -930,7 +928,7 @@ public sealed class User
     public string PasswordHash { get; private set; } = default!;
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private User() { }
 
@@ -1081,7 +1079,7 @@ public sealed class Session
     public DateTimeOffset LastSeenAt { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private Session() { }
 
@@ -1152,7 +1150,7 @@ public sealed class Channel
     public Guid? OwnerId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private Channel() { }
 
@@ -1227,7 +1225,7 @@ public sealed class ChannelMember
     public DateTimeOffset? BannedAt { get; private set; }
     public Guid? BannedById { get; private set; }
     public string? BanReason { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
 
     private ChannelMember() { }
 
@@ -1298,7 +1296,7 @@ public sealed class Message
     public string Content { get; private set; } = default!;
     public long? ReplyToId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
 
     private Message() { }
@@ -1761,7 +1759,7 @@ public sealed class PasswordHasherAdapter : IPasswordHasher
     }
 
     private static User CreateDummy() =>
-        User.Register(Guid.Empty, "dummy@void", "dummy", "placeholder", DateTimeOffset.UnixEpoch);
+        User.Register(Guid.Empty, "dummy@void.local", "dummy", "placeholder", DateTimeOffset.UnixEpoch);   // email must satisfy User.EmailRegex (requires a dot after @)
 }
 ```
 
@@ -1825,10 +1823,12 @@ public sealed class TimestampInterceptor(IClock clock) : SaveChangesInterceptor
         var now = clock.UtcNow;
         foreach (var entry in ctx.ChangeTracker.Entries().Where(e => e.State == EntityState.Modified))
         {
-            if (entry.Metadata.FindProperty("UpdatedAt") is not null)
-            {
-                entry.Property("UpdatedAt").CurrentValue = now;
-            }
+            if (entry.Metadata.FindProperty("UpdatedAt") is null) continue;
+            var prop = entry.Property("UpdatedAt");
+            // Respect callers that set UpdatedAt explicitly (e.g. Message.Edit sets the "edited at"
+            // timestamp it wants the UI to display). Only stamp when the property wasn't touched.
+            if (prop.IsModified) continue;
+            prop.CurrentValue = now;
         }
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -2017,7 +2017,7 @@ git commit -m "feat(infra): add AtticDbContext with entity configurations"
 
 - [ ] **Step 20.1: Write `src/Attic.Infrastructure/DependencyInjection.cs`**
 
-`AddNpgsqlDbContext` from Aspire doesn't expose the service provider in its options callback, so we attach the `TimestampInterceptor` inside `AtticDbContext.OnConfiguring` (Step 20.2) and leave this helper to wire connection + naming convention only.
+Aspire's `AddNpgsqlDbContext<T>` enables DbContext pooling unconditionally, and pooling forbids setting options inside `OnConfiguring`. We register the `DbContext` manually (non-pooled) so we can attach the DI-resolved `TimestampInterceptor` via a service-provider-aware options callback, and then layer Aspire's retries / health checks / OTel on top via `EnrichNpgsqlDbContext`.
 
 ```csharp
 using Attic.Domain.Abstractions;
@@ -2028,6 +2028,7 @@ using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -2046,40 +2047,38 @@ public static class DependencyInjection
 
     public static IHostApplicationBuilder AddAtticDbContext(this IHostApplicationBuilder builder, string connectionName)
     {
-        builder.AddNpgsqlDbContext<AtticDbContext>(connectionName, configureDbContextOptions: options =>
+        var connectionString = builder.Configuration.GetConnectionString(connectionName)
+            ?? throw new InvalidOperationException($"Connection string '{connectionName}' was not found.");
+
+        builder.Services.AddDbContext<AtticDbContext>((sp, options) =>
         {
+            options.UseNpgsql(connectionString);
             options.UseSnakeCaseNamingConvention();
+            options.AddInterceptors(sp.GetRequiredService<TimestampInterceptor>());
         });
+        builder.EnrichNpgsqlDbContext<AtticDbContext>();
         return builder;
     }
 }
 ```
 
-- [ ] **Step 20.2: Add `OnConfiguring` to `AtticDbContext` to attach the interceptor**
+- [ ] **Step 20.2: Keep `AtticDbContext` single-arg**
 
-Replace the body of `AtticDbContext` (file from Task 19) with:
+`AtticDbContext` stays with the single-argument constructor from Task 19. The interceptor is attached at options-build time by the `AddAtticDbContext` helper above — no `OnConfiguring` override is needed. Confirm the current file still reads:
 
 ```csharp
 using Attic.Domain.Entities;
-using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 
 namespace Attic.Infrastructure.Persistence;
 
-public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options, TimestampInterceptor interceptor) : DbContext(options)
+public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options) : DbContext(options)
 {
-    private readonly TimestampInterceptor _interceptor = interceptor;
-
     public DbSet<User> Users => Set<User>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Channel> Channels => Set<Channel>();
     public DbSet<ChannelMember> ChannelMembers => Set<ChannelMember>();
     public DbSet<Message> Messages => Set<Message>();
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.AddInterceptors(_interceptor);
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -2129,7 +2128,6 @@ git commit -m "feat(infra): wire DbContext into Aspire Postgres with snake_case 
 Create `src/Attic.Infrastructure/Persistence/DesignTimeDbContextFactory.cs`:
 
 ```csharp
-using Attic.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -2137,6 +2135,8 @@ namespace Attic.Infrastructure.Persistence;
 
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AtticDbContext>
 {
+    // Used only by `dotnet-ef` at design time to generate migrations. Never opens a
+    // connection — the connection string below is a placeholder for tool completeness.
     public AtticDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<AtticDbContext>()
@@ -2144,8 +2144,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Att
             .UseSnakeCaseNamingConvention()
             .Options;
 
-        var interceptor = new TimestampInterceptor(new Clock.SystemClock());
-        return new AtticDbContext(options, interceptor);
+        return new AtticDbContext(options);
     }
 }
 ```
@@ -2507,10 +2506,10 @@ public static class AuthExtensions
         return services;
     }
 
-    public static CookieOptions CreateSessionCookieOptions(DateTimeOffset expiresAt) => new()
+    public static CookieOptions CreateSessionCookieOptions(HttpRequest request, DateTimeOffset expiresAt) => new()
     {
         HttpOnly = true,
-        Secure = true,
+        Secure = request.IsHttps,   // tracks the request scheme: false for dev HTTP, true for prod HTTPS
         SameSite = SameSiteMode.Lax,
         Path = "/",
         Expires = expiresAt
@@ -2672,12 +2671,12 @@ public sealed class SendMessageRequestValidator : AbstractValidator<SendMessageR
 {
     public SendMessageRequestValidator()
     {
-        RuleFor(r => r.ChannelId).NotEmpty();
-        RuleFor(r => r.ClientMessageId).NotEmpty();
+        RuleFor(r => r.ChannelId).NotEmpty().WithErrorCode("invalid_channel");
+        RuleFor(r => r.ClientMessageId).NotEmpty().WithErrorCode("invalid_client_message_id");
+        RuleFor(r => r.Content).NotEmpty().WithErrorCode("empty_content");
         RuleFor(r => r.Content)
-            .NotEmpty()
-            .Must(c => Encoding.UTF8.GetByteCount(c) <= 3072)
-            .WithMessage("Message content exceeds 3 KB.");
+            .Must(c => c is null || Encoding.UTF8.GetByteCount(c) <= 3072)
+            .WithErrorCode("content_too_large");
     }
 }
 ```
@@ -2772,7 +2771,7 @@ public static class AuthEndpoints
 
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 
@@ -2800,7 +2799,7 @@ public static class AuthEndpoints
         db.Sessions.Add(session);
         await db.SaveChangesAsync(ct);
 
-        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(session.ExpiresAt));
+        http.Response.Cookies.Append(AtticAuthenticationOptions.CookieName, cookieValue, AuthExtensions.CreateSessionCookieOptions(http.Request, session.ExpiresAt));
         return Results.Ok(new MeResponse(user.Id, user.Email, user.Username));
     }
 
@@ -2991,21 +2990,29 @@ using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
 using Attic.Domain.Services;
 using Attic.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace Attic.Api.Hubs;
 
 [Authorize]
-public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser currentUser) : Hub
+public sealed class ChatHub(
+    AtticDbContext db,
+    IClock clock,
+    IValidator<SendMessageRequest> sendMessageValidator) : Hub
 {
     public const string Path = "/hub";
 
+    // The scoped `CurrentUser` service is populated by AtticAuthenticationHandler on HTTP
+    // requests only; SignalR method-invocation scopes don't go through it, so hub methods
+    // read the user id from Context.User directly.
+    private Guid? UserId => CurrentUser.ReadUserId(Context.User!);
+
     public override async Task OnConnectedAsync()
     {
-        var userId = CurrentUser.ReadUserId(Context.User!);
+        var userId = UserId;
         var sessionId = CurrentUser.ReadSessionId(Context.User!);
         if (userId is null || sessionId is null)
         {
@@ -3020,17 +3027,17 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<SendMessageResponse> SendMessage(SendMessageRequest request)
     {
-        if (!currentUser.IsAuthenticated) return new SendMessageResponse(false, null, null, "unauthorized");
+        var userId = UserId;
+        if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-            return new SendMessageResponse(false, null, null, "empty_content");
-        if (Encoding.UTF8.GetByteCount(request.Content) > Message.MaxContentBytes)
-            return new SendMessageResponse(false, null, null, "content_too_large");
+        var validation = await sendMessageValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return new SendMessageResponse(false, null, null, validation.Errors[0].ErrorCode);
 
         var member = await db.ChannelMembers
             .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == currentUser.UserIdOrThrow);
+            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == userId.Value);
 
         // Phase 1 fallback: the seeded lobby has no members yet; auto-join on first post.
         if (member is null)
@@ -3038,7 +3045,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
             var channelExists = await db.Channels.AnyAsync(c => c.Id == request.ChannelId);
             if (!channelExists) return new SendMessageResponse(false, null, null, "channel_not_found");
 
-            var auto = ChannelMember.Join(request.ChannelId, currentUser.UserIdOrThrow, Attic.Domain.Enums.ChannelRole.Member, clock.UtcNow);
+            var auto = ChannelMember.Join(request.ChannelId, userId.Value, Attic.Domain.Enums.ChannelRole.Member, clock.UtcNow);
             db.ChannelMembers.Add(auto);
             member = auto;
         }
@@ -3046,11 +3053,11 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
         var auth = AuthorizationRules.CanPostInChannel(member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
 
-        var msg = Message.Post(request.ChannelId, currentUser.UserIdOrThrow, request.Content, request.ReplyToId, clock.UtcNow);
+        var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
         await db.SaveChangesAsync();
 
-        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == currentUser.UserIdOrThrow);
+        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
         var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
@@ -3060,7 +3067,7 @@ public sealed class ChatHub(AtticDbContext db, IClock clock, CurrentUser current
 
     public async Task<object> SubscribeToChannel(Guid channelId)
     {
-        if (!currentUser.IsAuthenticated) return new { ok = false, error = "unauthorized" };
+        if (UserId is null) return new { ok = false, error = "unauthorized" };
 
         var channelExists = await db.Channels.AnyAsync(c => c.Id == channelId);
         if (!channelExists) return new { ok = false, error = "channel_not_found" };

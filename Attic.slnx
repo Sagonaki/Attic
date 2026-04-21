@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Attic.Api/Attic.Api.csproj" />
+    <Project Path="src/Attic.AppHost/Attic.AppHost.csproj" />
+    <Project Path="src/Attic.Contracts/Attic.Contracts.csproj" />
+    <Project Path="src/Attic.Domain/Attic.Domain.csproj" />
+    <Project Path="src/Attic.Infrastructure/Attic.Infrastructure.csproj" />
+    <Project Path="src/Attic.ServiceDefaults/Attic.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Attic.Api.IntegrationTests/Attic.Api.IntegrationTests.csproj" />
+    <Project Path="tests/Attic.Domain.Tests/Attic.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
