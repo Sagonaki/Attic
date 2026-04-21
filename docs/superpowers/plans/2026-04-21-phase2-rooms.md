@@ -1096,7 +1096,7 @@ git commit -m "feat(domain): add CanInviteToChannel rule"
 - Create: `src/Attic.Infrastructure/Persistence/Configurations/ChannelInvitationConfiguration.cs`
 - Modify: `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`
 
-- [ ] **Step 11.1: Write `ChannelInvitationConfiguration.cs`**
+- [x] **Step 11.1: Write `ChannelInvitationConfiguration.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -1128,7 +1128,7 @@ public sealed class ChannelInvitationConfiguration : IEntityTypeConfiguration<Ch
 }
 ```
 
-- [ ] **Step 11.2: Add `DbSet<ChannelInvitation>` to `AtticDbContext`**
+- [x] **Step 11.2: Add `DbSet<ChannelInvitation>` to `AtticDbContext`**
 
 Open `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`. Insert after `DbSet<Message>`:
 
@@ -1136,7 +1136,7 @@ Open `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`. Insert after `DbS
     public DbSet<ChannelInvitation> ChannelInvitations => Set<ChannelInvitation>();
 ```
 
-- [ ] **Step 11.3: Build + commit**
+- [x] **Step 11.3: Build + commit**
 
 ```bash
 dotnet build src/Attic.Infrastructure
