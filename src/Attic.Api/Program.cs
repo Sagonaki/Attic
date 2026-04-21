@@ -104,6 +104,14 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<Attic.Api.Security.SecurityHeadersMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
