@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Attic.Api/Attic.Api.csproj" />
+    <Project Path="src/Attic.AppHost/Attic.AppHost.csproj" />
     <Project Path="src/Attic.Contracts/Attic.Contracts.csproj" />
     <Project Path="src/Attic.Domain/Attic.Domain.csproj" />
     <Project Path="src/Attic.Infrastructure/Attic.Infrastructure.csproj" />
