@@ -8,6 +8,7 @@ import { CreateRoomModal } from './CreateRoomModal';
 import { PublicCatalog } from './PublicCatalog';
 import { RoomDetails } from './RoomDetails';
 import { InvitationsInbox } from './InvitationsInbox';
+import { Contacts } from './Contacts';
 import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 
@@ -40,7 +41,8 @@ export function ChatShell() {
         <main className="flex-1 flex overflow-hidden">
           {pathname === '/catalog' && <PublicCatalog />}
           {pathname === '/invitations' && <InvitationsInbox />}
-          {pathname !== '/catalog' && pathname !== '/invitations' && (
+          {pathname === '/contacts' && <Contacts />}
+          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && (
             <>
               <div className="flex-1 flex flex-col"><ChatWindow /></div>
               {channelId && <RoomDetails channelId={channelId} />}

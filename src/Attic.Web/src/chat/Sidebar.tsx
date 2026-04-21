@@ -50,8 +50,11 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
           );
         })}
       </ul>
-      <div className="p-2 border-t">
-        <Link to="/invitations" className="block text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
+      <div className="p-2 border-t flex gap-2">
+        <Link to="/contacts" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
+          Contacts
+        </Link>
+        <Link to="/invitations" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
           Invitations
         </Link>
       </div>
