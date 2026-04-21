@@ -651,7 +651,7 @@ git commit -m "feat(domain): add CanJoinChannel and CanLeaveChannel rules"
 - Modify: `src/Attic.Domain/Services/AuthorizationRules.cs`
 - Modify: `tests/Attic.Domain.Tests/AuthorizationRulesTests.cs`
 
-- [ ] **Step 6.1: Append tests**
+- [x] **Step 6.1: Append tests**
 
 ```csharp
     [Fact]
@@ -696,7 +696,7 @@ git commit -m "feat(domain): add CanJoinChannel and CanLeaveChannel rules"
     }
 ```
 
-- [ ] **Step 6.2: Run, verify fail**
+- [x] **Step 6.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanManageChannel|CanDeleteChannel"
@@ -704,7 +704,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanManageChannel|CanDeleteChannel
 
 Expected: compile failure.
 
-- [ ] **Step 6.3: Append methods to `AuthorizationRules.cs`**
+- [x] **Step 6.3: Append methods to `AuthorizationRules.cs`**
 
 ```csharp
     public static AuthorizationResult CanManageChannel(ChannelMember? member)
@@ -723,13 +723,13 @@ Expected: compile failure.
     }
 ```
 
-- [ ] **Step 6.4: Run, verify pass**
+- [x] **Step 6.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
 ```
 
-- [ ] **Step 6.5: Commit**
+- [x] **Step 6.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Services/AuthorizationRules.cs tests/Attic.Domain.Tests/AuthorizationRulesTests.cs

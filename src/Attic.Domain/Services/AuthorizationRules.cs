@@ -31,4 +31,19 @@ public static class AuthorizationRules
         if (member.Role == ChannelRole.Owner) return AuthorizationResult.Deny(AuthorizationFailureReason.OwnerCannotLeave);
         return AuthorizationResult.Ok();
     }
+
+    public static AuthorizationResult CanManageChannel(ChannelMember? member)
+    {
+        if (member is null) return AuthorizationResult.Deny(AuthorizationFailureReason.NotAMember);
+        if (member.BannedAt is not null) return AuthorizationResult.Deny(AuthorizationFailureReason.BannedFromChannel);
+        if (member.Role == Enums.ChannelRole.Member) return AuthorizationResult.Deny(AuthorizationFailureReason.NotAdmin);
+        return AuthorizationResult.Ok();
+    }
+
+    public static AuthorizationResult CanDeleteChannel(Channel channel, Guid actorUserId)
+    {
+        if (channel.DeletedAt is not null) return AuthorizationResult.Deny(AuthorizationFailureReason.ChannelDeleted);
+        if (channel.OwnerId != actorUserId) return AuthorizationResult.Deny(AuthorizationFailureReason.NotOwner);
+        return AuthorizationResult.Ok();
+    }
 }
