@@ -16,6 +16,7 @@ public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options) : D
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<ChannelRead> ChannelReads => Set<ChannelRead>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
