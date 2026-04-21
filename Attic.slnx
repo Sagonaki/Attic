@@ -7,4 +7,7 @@
     <Project Path="src/Attic.Infrastructure/Attic.Infrastructure.csproj" />
     <Project Path="src/Attic.ServiceDefaults/Attic.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Attic.Domain.Tests/Attic.Domain.Tests.csproj" />
+  </Folder>
 </Solution>
