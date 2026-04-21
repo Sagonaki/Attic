@@ -54,6 +54,7 @@ public class UserTests
 
         user.DeletedAt.ShouldBe(DateTimeOffset.UnixEpoch.AddDays(1));
         user.Email.ShouldBe("deleted-11111111-1111-1111-1111-111111111111@void");
-        user.Username.ShouldBe("deleted-11111111-1111-1111-1111-111111111111");
+        // Username is capped at 32 chars: "deleted-" (8) + first 24 hex chars of GUID (N format).
+        user.Username.ShouldBe("deleted-111111111111111111111111");
     }
 }

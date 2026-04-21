@@ -144,50 +144,53 @@ public static class AuthEndpoints
 
         var now = clock.UtcNow;
 
-        // Transactional cascade.
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
-
-        // Owned channels → hard delete dependents explicitly, then the channels themselves.
-        var ownedChannelIds = await db.Channels.AsNoTracking()
-            .Where(c => c.OwnerId == userId)
-            .Select(c => c.Id)
-            .ToListAsync(ct);
-        if (ownedChannelIds.Count > 0)
+        // NpgsqlRetryingExecutionStrategy requires wrapping manual transactions with CreateExecutionStrategy.
+        await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
-            await db.ChannelInvitations.Where(i => ownedChannelIds.Contains(i.ChannelId)).ExecuteDeleteAsync(ct);
-            await db.ChannelMembers.IgnoreQueryFilters().Where(m => ownedChannelIds.Contains(m.ChannelId)).ExecuteDeleteAsync(ct);
-            await db.ChannelReads.Where(r => ownedChannelIds.Contains(r.ChannelId)).ExecuteDeleteAsync(ct);
-            // Delete attachments in owned channel messages (two-step to avoid subquery translation issues).
-            var ownedMsgIds = await db.Messages.IgnoreQueryFilters()
-                .Where(m => ownedChannelIds.Contains(m.ChannelId))
-                .Select(m => m.Id)
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+            // Owned channels → hard delete dependents explicitly, then the channels themselves.
+            var ownedChannelIds = await db.Channels.AsNoTracking()
+                .Where(c => c.OwnerId == userId)
+                .Select(c => c.Id)
                 .ToListAsync(ct);
-            if (ownedMsgIds.Count > 0)
-                await db.Attachments.Where(a => a.MessageId != null && ownedMsgIds.Contains(a.MessageId!.Value)).ExecuteDeleteAsync(ct);
-            await db.Messages.IgnoreQueryFilters().Where(m => ownedChannelIds.Contains(m.ChannelId)).ExecuteDeleteAsync(ct);
-            await db.Channels.Where(c => ownedChannelIds.Contains(c.Id)).ExecuteDeleteAsync(ct);
-        }
+            if (ownedChannelIds.Count > 0)
+            {
+                await db.ChannelInvitations.Where(i => ownedChannelIds.Contains(i.ChannelId)).ExecuteDeleteAsync(ct);
+                await db.ChannelMembers.IgnoreQueryFilters().Where(m => ownedChannelIds.Contains(m.ChannelId)).ExecuteDeleteAsync(ct);
+                await db.ChannelReads.Where(r => ownedChannelIds.Contains(r.ChannelId)).ExecuteDeleteAsync(ct);
+                // Delete attachments in owned channel messages (two-step to avoid subquery translation issues).
+                var ownedMsgIds = await db.Messages.IgnoreQueryFilters()
+                    .Where(m => ownedChannelIds.Contains(m.ChannelId))
+                    .Select(m => m.Id)
+                    .ToListAsync(ct);
+                if (ownedMsgIds.Count > 0)
+                    await db.Attachments.Where(a => a.MessageId != null && ownedMsgIds.Contains(a.MessageId!.Value)).ExecuteDeleteAsync(ct);
+                await db.Messages.IgnoreQueryFilters().Where(m => ownedChannelIds.Contains(m.ChannelId)).ExecuteDeleteAsync(ct);
+                await db.Channels.Where(c => ownedChannelIds.Contains(c.Id)).ExecuteDeleteAsync(ct);
+            }
 
-        // Delete non-owned memberships and reads.
-        await db.ChannelMembers.IgnoreQueryFilters().Where(m => m.UserId == userId).ExecuteDeleteAsync(ct);
-        await db.ChannelReads.Where(r => r.UserId == userId).ExecuteDeleteAsync(ct);
+            // Delete non-owned memberships and reads.
+            await db.ChannelMembers.IgnoreQueryFilters().Where(m => m.UserId == userId).ExecuteDeleteAsync(ct);
+            await db.ChannelReads.Where(r => r.UserId == userId).ExecuteDeleteAsync(ct);
 
-        // Friend graph.
-        await db.Friendships.Where(f => f.UserAId == userId || f.UserBId == userId).ExecuteDeleteAsync(ct);
-        await db.FriendRequests.Where(r => r.SenderId == userId || r.RecipientId == userId).ExecuteDeleteAsync(ct);
-        await db.UserBlocks.Where(b => b.BlockerId == userId || b.BlockedId == userId).ExecuteDeleteAsync(ct);
+            // Friend graph.
+            await db.Friendships.Where(f => f.UserAId == userId || f.UserBId == userId).ExecuteDeleteAsync(ct);
+            await db.FriendRequests.Where(r => r.SenderId == userId || r.RecipientId == userId).ExecuteDeleteAsync(ct);
+            await db.UserBlocks.Where(b => b.BlockerId == userId || b.BlockedId == userId).ExecuteDeleteAsync(ct);
 
-        // Sessions.
-        await db.Sessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
+            // Sessions.
+            await db.Sessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
 
-        // Invitations sent by or targeting this user (cross-channel).
-        await db.ChannelInvitations.Where(i => i.InviterId == userId || i.InviteeId == userId).ExecuteDeleteAsync(ct);
+            // Invitations sent by or targeting this user (cross-channel).
+            await db.ChannelInvitations.Where(i => i.InviterId == userId || i.InviteeId == userId).ExecuteDeleteAsync(ct);
 
-        // Soft-delete the user with tombstone rewrite.
-        user.SoftDelete(now);
-        await db.SaveChangesAsync(ct);
+            // Soft-delete the user with tombstone rewrite.
+            user.SoftDelete(now);
+            await db.SaveChangesAsync(ct);
 
-        await tx.CommitAsync(ct);
+            await tx.CommitAsync(ct);
+        });
 
         // Clear the caller's cookie.
         http.Response.Cookies.Delete(AtticAuthenticationOptions.CookieName);
