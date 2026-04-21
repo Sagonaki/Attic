@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Contracts.Attachments;
 using Attic.Contracts.Common;
 using Attic.Contracts.Messages;
 using Attic.Domain.Services;
@@ -50,7 +51,21 @@ public static class MessagesEndpoints
                   (m, u) => new MessageDto(m.Id, m.ChannelId, m.SenderId, u.Username, m.Content, m.ReplyToId, m.CreatedAt, m.UpdatedAt))
             .ToListAsync(ct);
 
-        string? nextCursor = rows.Count == size ? KeysetCursor.Encode(rows[^1].Id) : null;
-        return Results.Ok(new PagedResult<MessageDto>(rows, nextCursor));
+        var ids = rows.Select(m => m.Id).ToList();
+        var attachmentsByMessage = await db.Attachments.AsNoTracking()
+            .Where(a => a.MessageId != null && ids.Contains(a.MessageId!.Value))
+            .Select(a => new { a.MessageId, Dto = new AttachmentDto(
+                a.Id, a.OriginalFileName, a.ContentType, a.SizeBytes, a.Comment) })
+            .ToListAsync(ct);
+        var attachmentMap = attachmentsByMessage
+            .GroupBy(x => x.MessageId!.Value)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Dto).ToArray());
+
+        var enriched = rows
+            .Select(m => m with { Attachments = attachmentMap.TryGetValue(m.Id, out var atts) ? atts : null })
+            .ToList();
+
+        string? nextCursor = enriched.Count == size ? KeysetCursor.Encode(enriched[^1].Id) : null;
+        return Results.Ok(new PagedResult<MessageDto>(enriched, nextCursor));
     }
 }
