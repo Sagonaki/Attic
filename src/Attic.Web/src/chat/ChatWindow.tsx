@@ -8,6 +8,7 @@ import { ChatInput } from './ChatInput';
 import { useAuth } from '../auth/useAuth';
 import { AttachmentPreview } from './AttachmentPreview';
 import { MessageActionsMenu } from './MessageActionsMenu';
+import { useMarkRead } from './useMarkRead';
 
 export function ChatWindow() {
   const { channelId } = useParams<{ channelId: string }>();
@@ -18,6 +19,8 @@ export function ChatWindow() {
 
 function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: string; username: string } }) {
   const { items, fetchNextPage, hasNextPage, isFetchingNextPage } = useChannelMessages(channelId);
+  const latestMessageId = items[0]?.id && items[0].id > 0 ? items[0].id : undefined;
+  useMarkRead(channelId, latestMessageId);
   const send = useSendMessage(channelId, user);
   const del = useDeleteMessage(channelId);
   const edit = useEditMessage();
