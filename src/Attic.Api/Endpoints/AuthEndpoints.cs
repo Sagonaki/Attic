@@ -3,6 +3,7 @@ using Attic.Contracts.Auth;
 using Attic.Contracts.Common;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
@@ -127,6 +128,7 @@ public static class AuthEndpoints
         IClock clock,
         CurrentUser currentUser,
         HttpContext http,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -187,6 +189,9 @@ public static class AuthEndpoints
 
             // Soft-delete the user with tombstone rewrite.
             user.SoftDelete(now);
+            audit.Add(
+                action: "account.delete",
+                actorUserId: userId);
             await db.SaveChangesAsync(ct);
 
             await tx.CommitAsync(ct);

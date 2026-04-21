@@ -5,6 +5,7 @@ using Attic.Contracts.Common;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Enums;
 using Attic.Domain.Services;
+using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
@@ -66,6 +67,7 @@ public static class ChannelMembersEndpoints
         IClock clock,
         CurrentUser currentUser,
         ChannelEventBroadcaster events,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -80,6 +82,11 @@ public static class ChannelMembersEndpoints
         if (!auth.Allowed) return Results.Forbid();
 
         target!.Ban(actorId, reason: null, at: clock.UtcNow);
+        audit.Add(
+            action: "channel.ban_member",
+            actorUserId: actorId,
+            targetChannelId: channelId,
+            targetUserId: userId);
         await db.SaveChangesAsync(ct);
 
         await events.ChannelMemberLeft(channelId, userId);
@@ -96,6 +103,7 @@ public static class ChannelMembersEndpoints
         AtticDbContext db,
         CurrentUser currentUser,
         ChannelEventBroadcaster events,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -116,6 +124,12 @@ public static class ChannelMembersEndpoints
         if (!auth.Allowed) return Results.Forbid();
 
         target!.ChangeRole(newRole);
+        audit.Add(
+            action: "channel.change_role",
+            actorUserId: actorId,
+            targetChannelId: channelId,
+            targetUserId: userId,
+            dataJson: $"{{\"newRole\":\"{newRole.ToString().ToLowerInvariant()}\"}}");;
         await db.SaveChangesAsync(ct);
 
         await events.ChannelMemberRoleChanged(channelId, userId, newRole.ToString().ToLowerInvariant());
@@ -166,6 +180,7 @@ public static class ChannelMembersEndpoints
         AtticDbContext db,
         CurrentUser currentUser,
         ChannelEventBroadcaster events,
+        AuditLogContext audit,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -180,6 +195,11 @@ public static class ChannelMembersEndpoints
         if (target is null || target.BannedAt is null) return Results.NotFound();
 
         target.Unban();
+        audit.Add(
+            action: "channel.unban_member",
+            actorUserId: actorId,
+            targetChannelId: channelId,
+            targetUserId: userId);
         await db.SaveChangesAsync(ct);
 
         var uname = (await db.Users.IgnoreQueryFilters().AsNoTracking().FirstAsync(u => u.Id == userId, ct)).Username;
