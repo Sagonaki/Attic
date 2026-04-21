@@ -1227,7 +1227,7 @@ git commit -m "chore(infra): drop Phase-1 seeded lobby (Phase 2 replaces with re
 
 Phase 1's hub auto-created a `ChannelMember` when a sender posted to a channel they weren't in. Phase 2 replaces that with proper `/api/channels/{id}/join`; posting without membership must now return `{ok:false, error:"NotAMember"}`.
 
-- [ ] **Step 14.1: Replace the auto-join branch in `ChatHub.SendMessage`**
+- [x] **Step 14.1: Replace the auto-join branch in `ChatHub.SendMessage`**
 
 Open `src/Attic.Api/Hubs/ChatHub.cs`. Find the Phase-1 fallback block starting with `// Phase 1 fallback: the seeded lobby has no members yet` and replace the block with:
 
@@ -1243,7 +1243,7 @@ Open `src/Attic.Api/Hubs/ChatHub.cs`. Find the Phase-1 fallback block starting w
 
 (Removes the `if (member is null) { auto-join }` block — membership must already exist.)
 
-- [ ] **Step 14.2: Update `MessagingFlowTests.cs` to create a channel first**
+- [x] **Step 14.2: Update `MessagingFlowTests.cs` to create a channel first**
 
 The two existing tests hit the seeded lobby. Replace the hardcoded `LobbyId` with a freshly-created channel per test.
 
@@ -1363,7 +1363,7 @@ public sealed class MessagingFlowTests(AppHostFixture fx)
 
 Note: this test file references `Attic.Contracts.Channels.CreateChannelRequest` and `ChannelDetails` which do not yet exist — they're added in Task 16. The test project will fail to compile until Task 16 lands, and this Task 14's verification step below accepts that (we only rebuild the API, not the tests). See Task 17 for the green-test checkpoint.
 
-- [ ] **Step 14.3: Build the API-only subgraph**
+- [x] **Step 14.3: Build the API-only subgraph**
 
 ```bash
 dotnet build src/Attic.Api
@@ -1371,7 +1371,7 @@ dotnet build src/Attic.Api
 
 Expected: 0/0. Integration tests will fail to compile until Task 16 adds the DTOs.
 
-- [ ] **Step 14.4: Commit**
+- [x] **Step 14.4: Commit**
 
 ```bash
 git add src/Attic.Api/Hubs/ChatHub.cs tests/Attic.Api.IntegrationTests/MessagingFlowTests.cs

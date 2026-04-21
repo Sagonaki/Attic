@@ -2,7 +2,6 @@ using Attic.Api.Auth;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
-using Attic.Domain.Enums;
 using Attic.Domain.Services;
 using Attic.Infrastructure.Persistence;
 using FluentValidation;
@@ -50,21 +49,9 @@ public sealed class ChatHub(
             return new SendMessageResponse(false, null, null, validation.Errors[0].ErrorCode);
 
         var member = await db.ChannelMembers
-            .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == userId.Value);
-
-        // Phase 1 fallback: the seeded lobby has no members yet; auto-join on first post.
-        // Do NOT auto-join banned members (BannedAt != null means banned).
-        if (member is null)
-        {
-            var channelExists = await db.Channels.AnyAsync(c => c.Id == request.ChannelId);
-            if (!channelExists) return new SendMessageResponse(false, null, null, "channel_not_found");
-
-            var auto = ChannelMember.Join(request.ChannelId, userId.Value, ChannelRole.Member, clock.UtcNow);
-            db.ChannelMembers.Add(auto);
-            member = auto;
-        }
 
         var auth = AuthorizationRules.CanPostInChannel(member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
