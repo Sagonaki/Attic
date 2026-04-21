@@ -986,7 +986,7 @@ Expected: 0/0.
 
 **Files:** none (verification only)
 
-- [ ] **Step 12.1: Run full domain tests**
+- [x] **Step 12.1: Run full domain tests**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
@@ -994,7 +994,7 @@ dotnet test tests/Attic.Domain.Tests
 
 Expected: previous 78 + 8 FriendRequest + 5 Friendship + 2 UserBlock + 7 authorization (4 CanSendFriendRequest + 3 CanPostInPersonalChat + 1 CanOpenPersonalChat counted separately in tests) ≈ 100 passing. Exact count may vary; zero failures is the bar.
 
-- [ ] **Step 12.2: Commit checkpoint marker**
+- [x] **Step 12.2: Commit checkpoint marker**
 
 ```bash
 git commit --allow-empty -m "chore: Phase 3 Checkpoint 1 (domain + infra) green"
