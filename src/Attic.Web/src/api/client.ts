@@ -27,4 +27,17 @@ export const api = {
     });
     return handle<T>(r);
   },
+  async patch<T>(path: string, body?: unknown): Promise<T> {
+    const r = await fetch(new URL(path, window.location.origin), {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    return handle<T>(r);
+  },
+  async delete<T>(path: string): Promise<T> {
+    const r = await fetch(new URL(path, window.location.origin), { method: 'DELETE', credentials: 'include' });
+    return handle<T>(r);
+  },
 };

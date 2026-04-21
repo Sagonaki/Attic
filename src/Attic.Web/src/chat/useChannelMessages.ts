@@ -24,23 +24,34 @@ export function useChannelMessages(channelId: string) {
     const hub = getOrCreateHubClient();
     let active = true;
     void hub.subscribeToChannel(channelId);
-    const off = hub.onMessageCreated(msg => {
+
+    const offCreated = hub.onMessageCreated(msg => {
       if (!active || msg.channelId !== channelId) return;
       qc.setQueryData<{ pages: PagedResult<MessageDto>[]; pageParams: unknown[] }>(queryKey, prev => {
         if (!prev || prev.pages.length === 0) {
           return { pages: [{ items: [msg], nextCursor: null }], pageParams: [null] };
         }
         const first = prev.pages[0];
-        if (first.items.some(m => m.id === msg.id)) return prev;   // already appended via ack
+        if (first.items.some(m => m.id === msg.id)) return prev;
+        return { ...prev, pages: [{ ...first, items: [msg, ...first.items] }, ...prev.pages.slice(1)] };
+      });
+    });
+
+    const offDeleted = hub.onMessageDeleted((cid, messageId) => {
+      if (!active || cid !== channelId) return;
+      qc.setQueryData<{ pages: PagedResult<MessageDto>[]; pageParams: unknown[] }>(queryKey, prev => {
+        if (!prev) return prev;
         return {
           ...prev,
-          pages: [{ ...first, items: [msg, ...first.items] }, ...prev.pages.slice(1)],
+          pages: prev.pages.map(p => ({ ...p, items: p.items.filter(m => m.id !== messageId) })),
         };
       });
     });
+
     return () => {
       active = false;
-      off();
+      offCreated();
+      offDeleted();
       void hub.unsubscribeFromChannel(channelId);
     };
   }, [channelId, qc, queryKey]);

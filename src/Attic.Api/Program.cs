@@ -35,6 +35,7 @@ builder.Services.AddSignalR(o =>
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
+builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins("http://localhost:3000", "https://localhost:3000")
@@ -60,6 +61,9 @@ app.MapOpenApi();
 // Map API endpoints
 app.MapAuthEndpoints();
 app.MapMessagesEndpoints();
+app.MapChannelsEndpoints();
+app.MapChannelMembersEndpoints();
+app.MapInvitationsEndpoints();
 app.MapHub<Attic.Api.Hubs.ChatHub>(Attic.Api.Hubs.ChatHub.Path).RequireAuthorization();
 
 // Apply migrations + seed on startup (Phase 1; production uses a separate migration job later).

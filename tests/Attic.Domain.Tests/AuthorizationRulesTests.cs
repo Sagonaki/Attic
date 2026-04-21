@@ -36,4 +36,292 @@ public class AuthorizationRulesTests
         result.Allowed.ShouldBeFalse();
         result.Reason.ShouldBe(AuthorizationFailureReason.NotAMember);
     }
+
+    private static readonly DateTimeOffset T0_J = DateTimeOffset.Parse("2026-04-21T10:00:00Z");
+
+    [Fact]
+    public void CanJoinChannel_allows_public_room_when_not_a_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        var result = AuthorizationRules.CanJoinChannel(channel, existingMember: null);
+        result.Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanJoinChannel_denies_already_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        var member = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var result = AuthorizationRules.CanJoinChannel(channel, member);
+        result.Reason.ShouldBe(AuthorizationFailureReason.AlreadyMember);
+    }
+
+    [Fact]
+    public void CanJoinChannel_denies_banned_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        var member = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        member.Ban(Guid.NewGuid(), "spam", T0_J);
+        var result = AuthorizationRules.CanJoinChannel(channel, member);
+        result.Reason.ShouldBe(AuthorizationFailureReason.BannedFromChannel);
+    }
+
+    [Fact]
+    public void CanJoinChannel_denies_private_room_without_invitation()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var result = AuthorizationRules.CanJoinChannel(channel, existingMember: null);
+        result.Reason.ShouldBe(AuthorizationFailureReason.CannotAutoJoinPrivate);
+    }
+
+    [Fact]
+    public void CanJoinChannel_denies_deleted_channel()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        channel.SoftDelete(T0_J.AddMinutes(1));
+        var result = AuthorizationRules.CanJoinChannel(channel, existingMember: null);
+        result.Reason.ShouldBe(AuthorizationFailureReason.ChannelDeleted);
+    }
+
+    [Fact]
+    public void CanLeaveChannel_allows_non_owner_member()
+    {
+        var channelId = Guid.NewGuid();
+        var member = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanLeaveChannel(member).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanLeaveChannel_denies_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var owner = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanLeaveChannel(owner).Reason.ShouldBe(AuthorizationFailureReason.OwnerCannotLeave);
+    }
+
+    [Fact]
+    public void CanLeaveChannel_denies_nonmember()
+    {
+        AuthorizationRules.CanLeaveChannel(null).Reason.ShouldBe(AuthorizationFailureReason.NotAMember);
+    }
+
+    [Fact]
+    public void CanManageChannel_allows_admin_and_owner()
+    {
+        var admin = ChannelMember.Join(Guid.NewGuid(), Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanManageChannel(admin).Allowed.ShouldBeTrue();
+        var owner = ChannelMember.Join(Guid.NewGuid(), Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanManageChannel(owner).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanManageChannel_denies_plain_member()
+    {
+        var member = ChannelMember.Join(Guid.NewGuid(), Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanManageChannel(member).Reason.ShouldBe(AuthorizationFailureReason.NotAdmin);
+    }
+
+    [Fact]
+    public void CanManageChannel_denies_banned_admin()
+    {
+        var admin = ChannelMember.Join(Guid.NewGuid(), Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        admin.Ban(Guid.NewGuid(), "spam", T0_J);
+        AuthorizationRules.CanManageChannel(admin).Reason.ShouldBe(AuthorizationFailureReason.BannedFromChannel);
+    }
+
+    [Fact]
+    public void CanDeleteChannel_allows_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var channel = Channel.CreateRoom(channelId, ChannelKind.Public, "room", null, ownerId, T0_J);
+        AuthorizationRules.CanDeleteChannel(channel, actorUserId: ownerId).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanDeleteChannel_denies_non_owner()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        AuthorizationRules.CanDeleteChannel(channel, actorUserId: Guid.NewGuid()).Reason
+            .ShouldBe(AuthorizationFailureReason.NotOwner);
+    }
+
+    [Fact]
+    public void CanBanFromChannel_allows_admin_banning_member()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanBanFromChannel_allows_owner_banning_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanBanFromChannel_denies_banning_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var owner = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, owner).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeTargeted);
+    }
+
+    [Fact]
+    public void CanBanFromChannel_denies_non_admin_actor()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanBanFromChannel(actor, target).Reason.ShouldBe(AuthorizationFailureReason.NotAdmin);
+    }
+
+    [Fact]
+    public void CanUnbanFromChannel_allows_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanUnbanFromChannel(actor).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanChangeRole_admin_can_promote_member_to_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Admin).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanChangeRole_admin_can_demote_other_admin_to_member()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Member).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanChangeRole_cannot_demote_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Member).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeDemoted);
+    }
+
+    [Fact]
+    public void CanChangeRole_cannot_promote_to_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Owner).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeTargeted);
+    }
+
+    [Fact]
+    public void CanChangeRole_denies_non_admin_actor()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Admin).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAdmin);
+    }
+
+    [Fact]
+    public void CanDeleteMessage_author_can_delete_own()
+    {
+        var authorId = Guid.NewGuid();
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, authorId, "hi", null, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actorUserId: authorId, actorMembership: null, channelKind: ChannelKind.Public)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanDeleteMessage_admin_of_room_can_delete_any()
+    {
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, Guid.NewGuid(), "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Public)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanDeleteMessage_personal_channel_has_no_admins()
+    {
+        var channelId = Guid.NewGuid();
+        var authorId = Guid.NewGuid();
+        var message = Message.Post(channelId, authorId, "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Personal).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
+
+    [Fact]
+    public void CanDeleteMessage_non_author_non_admin_denied()
+    {
+        var channelId = Guid.NewGuid();
+        var message = Message.Post(channelId, Guid.NewGuid(), "hi", null, T0_J);
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Public).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_member_of_private_can_invite_non_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, inviteeExistingMembership: null, hasPendingInvitation: false)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_inviting_to_public_room()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "lobby", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, null, false).Reason
+            .ShouldBe(AuthorizationFailureReason.CannotInviteToPublic);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_non_member_inviter()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter: null, null, false).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAMember);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_invitee_already_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var existing = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, existing, false).Reason
+            .ShouldBe(AuthorizationFailureReason.AlreadyMember);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_invitee_with_pending_invitation()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, null, hasPendingInvitation: true).Reason
+            .ShouldBe(AuthorizationFailureReason.AlreadyInvited);
+    }
 }
