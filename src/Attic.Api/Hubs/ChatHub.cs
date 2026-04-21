@@ -16,7 +16,8 @@ namespace Attic.Api.Hubs;
 public sealed class ChatHub(
     AtticDbContext db,
     IClock clock,
-    IValidator<SendMessageRequest> sendMessageValidator) : Hub
+    IValidator<SendMessageRequest> sendMessageValidator,
+    IValidator<EditMessageRequest> editValidator) : Hub
 {
     public const string Path = "/hub";
 
@@ -159,6 +160,29 @@ public sealed class ChatHub(
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageDeleted", msg.ChannelId, msg.Id);
         return new { ok = true };
+    }
+
+    public async Task<EditMessageResponse> EditMessage(EditMessageRequest request)
+    {
+        var userId = UserId;
+        if (userId is null) return new EditMessageResponse(false, null, "unauthorized");
+
+        var vr = await editValidator.ValidateAsync(request);
+        if (!vr.IsValid) return new EditMessageResponse(false, null, vr.Errors[0].ErrorCode);
+
+        var msg = await db.Messages.AsTracking().FirstOrDefaultAsync(m => m.Id == request.MessageId);
+        if (msg is null) return new EditMessageResponse(false, null, "not_found");
+
+        var auth = AuthorizationRules.CanEditMessage(msg, userId.Value);
+        if (!auth.Allowed) return new EditMessageResponse(false, null, auth.Reason.ToString());
+
+        msg.Edit(request.Content, clock.UtcNow);
+        await db.SaveChangesAsync();
+
+        await Clients.Group(GroupNames.Channel(msg.ChannelId))
+            .SendAsync("MessageEdited", msg.ChannelId, msg.Id, msg.Content, msg.UpdatedAt);
+
+        return new EditMessageResponse(true, msg.UpdatedAt, null);
     }
 }
 
