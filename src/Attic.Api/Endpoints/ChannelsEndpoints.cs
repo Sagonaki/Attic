@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Api.Hubs;
 using Attic.Contracts.Channels;
 using Attic.Contracts.Common;
 using Attic.Domain.Abstractions;
@@ -234,6 +235,7 @@ public static class ChannelsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -252,6 +254,10 @@ public static class ChannelsEndpoints
         db.ChannelMembers.Add(member);
         await db.SaveChangesAsync(ct);
 
+        var username = (await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId, ct)).Username;
+        await events.ChannelMemberJoined(id, new ChannelMemberSummary(
+            userId, username, "member", member.JoinedAt));
+
         return Results.NoContent();
     }
 
@@ -259,6 +265,7 @@ public static class ChannelsEndpoints
         Guid id,
         AtticDbContext db,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -273,6 +280,8 @@ public static class ChannelsEndpoints
         db.ChannelMembers.Remove(member!);
         await db.SaveChangesAsync(ct);
 
+        await events.ChannelMemberLeft(id, userId);
+
         return Results.NoContent();
     }
 
@@ -281,6 +290,7 @@ public static class ChannelsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -293,6 +303,8 @@ public static class ChannelsEndpoints
 
         channel.SoftDelete(clock.UtcNow);
         await db.SaveChangesAsync(ct);
+
+        await events.ChannelDeleted(channel.Id);
 
         return Results.NoContent();
     }

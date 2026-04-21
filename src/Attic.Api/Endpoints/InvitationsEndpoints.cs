@@ -1,4 +1,6 @@
 using Attic.Api.Auth;
+using Attic.Api.Hubs;
+using Attic.Contracts.Channels;
 using Attic.Contracts.Common;
 using Attic.Contracts.Invitations;
 using Attic.Domain.Abstractions;
@@ -36,6 +38,7 @@ public static class InvitationsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -69,10 +72,14 @@ public static class InvitationsEndpoints
         await db.SaveChangesAsync(ct);
 
         var inviterUser = await db.Users.AsNoTracking().FirstAsync(u => u.Id == inviterId, ct);
-        return Results.Ok(new InvitationDto(
+        var dto = new InvitationDto(
             inv.Id, channelId, channel.Name ?? "", inviterId,
             inviterUser.Username,
-            inv.Status.ToString().ToLowerInvariant(), inv.CreatedAt, inv.DecidedAt));
+            inv.Status.ToString().ToLowerInvariant(), inv.CreatedAt, inv.DecidedAt);
+
+        await events.InvitationReceived(invitee.Id, dto);
+
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> ListMine(
@@ -102,6 +109,7 @@ public static class InvitationsEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -122,6 +130,10 @@ public static class InvitationsEndpoints
             db.ChannelMembers.Add(ChannelMember.Join(inv.ChannelId, userId, ChannelRole.Member, clock.UtcNow));
         }
         await db.SaveChangesAsync(ct);
+
+        var username = (await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId, ct)).Username;
+        await events.ChannelMemberJoined(inv.ChannelId, new ChannelMemberSummary(
+            userId, username, "member", clock.UtcNow));
 
         return Results.NoContent();
     }

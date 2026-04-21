@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Api.Hubs;
 using Attic.Contracts.Channels;
 using Attic.Contracts.Common;
 using Attic.Domain.Abstractions;
@@ -64,6 +65,7 @@ public static class ChannelMembersEndpoints
         AtticDbContext db,
         IClock clock,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -80,6 +82,9 @@ public static class ChannelMembersEndpoints
         target!.Ban(actorId, reason: null, at: clock.UtcNow);
         await db.SaveChangesAsync(ct);
 
+        await events.ChannelMemberLeft(channelId, userId);
+        await events.RemovedFromChannel(userId, channelId, "banned");
+
         return Results.NoContent();
     }
 
@@ -90,6 +95,7 @@ public static class ChannelMembersEndpoints
         IValidator<ChangeRoleRequest> validator,
         AtticDbContext db,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -111,6 +117,8 @@ public static class ChannelMembersEndpoints
 
         target!.ChangeRole(newRole);
         await db.SaveChangesAsync(ct);
+
+        await events.ChannelMemberRoleChanged(channelId, userId, newRole.ToString().ToLowerInvariant());
 
         return Results.NoContent();
     }
@@ -157,6 +165,7 @@ public static class ChannelMembersEndpoints
         Guid userId,
         AtticDbContext db,
         CurrentUser currentUser,
+        ChannelEventBroadcaster events,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -172,6 +181,10 @@ public static class ChannelMembersEndpoints
 
         target.Unban();
         await db.SaveChangesAsync(ct);
+
+        var uname = (await db.Users.IgnoreQueryFilters().AsNoTracking().FirstAsync(u => u.Id == userId, ct)).Username;
+        await events.ChannelMemberJoined(channelId, new ChannelMemberSummary(
+            userId, uname, "member", target.JoinedAt));
 
         return Results.NoContent();
     }
