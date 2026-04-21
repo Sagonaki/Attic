@@ -7,6 +7,12 @@ internal static class TestHelpers
 {
     public static async Task<(HttpClient Client, string Username, string Email)> RegisterFresh(AppHostFixture fx, CancellationToken ct)
     {
+        var (client, username, email, _) = await RegisterFreshWithHandler(fx, ct);
+        return (client, username, email);
+    }
+
+    public static async Task<(HttpClient Client, string Username, string Email, HttpClientHandler Handler)> RegisterFreshWithHandler(AppHostFixture fx, CancellationToken ct)
+    {
         var handler = new HttpClientHandler { CookieContainer = new System.Net.CookieContainer() };
         var client = new HttpClient(handler) { BaseAddress = fx.ApiClient.BaseAddress };
 
@@ -15,6 +21,10 @@ internal static class TestHelpers
         (await client.PostAsJsonAsync("/api/auth/register",
             new RegisterRequest(email, username, "hunter2pw"), ct)).EnsureSuccessStatusCode();
 
-        return (client, username, email);
+        return (client, username, email, handler);
     }
+
+    public static string GetCookieHeader(HttpClientHandler handler, AppHostFixture fx)
+        => string.Join("; ",
+            handler.CookieContainer.GetCookies(fx.ApiClient.BaseAddress!).Select(c => $"{c.Name}={c.Value}"));
 }
