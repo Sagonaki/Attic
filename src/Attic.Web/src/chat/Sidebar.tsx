@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useChannelList } from './useChannelList';
+import { useOpenPersonalChat } from './useOpenPersonalChat';
 
 type Tab = 'public' | 'private' | 'personal';
 
@@ -8,6 +9,12 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
   const { data, isLoading } = useChannelList();
   const [tab, setTab] = useState<Tab>('public');
   const { pathname } = useLocation();
+  const openChat = useOpenPersonalChat();
+
+  function promptAndOpen() {
+    const username = window.prompt('Open personal chat with (username):');
+    if (username && username.trim().length >= 3) openChat(username.trim());
+  }
 
   const channels = (data ?? []).filter(c => c.kind === tab);
 
@@ -25,9 +32,15 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
         <Link to="/catalog" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
           Catalog
         </Link>
-        <button onClick={onCreate} className="flex-1 text-xs px-2 py-1 border rounded hover:bg-slate-50">
-          + New room
-        </button>
+        {tab === 'personal' ? (
+          <button onClick={promptAndOpen} className="flex-1 text-xs px-2 py-1 border rounded hover:bg-slate-50">
+            + New personal chat
+          </button>
+        ) : (
+          <button onClick={onCreate} className="flex-1 text-xs px-2 py-1 border rounded hover:bg-slate-50">
+            + New room
+          </button>
+        )}
       </div>
       <ul className="flex-1 overflow-y-auto">
         {isLoading && <li className="p-3 text-slate-400 text-sm">Loading…</li>}
@@ -50,8 +63,11 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
           );
         })}
       </ul>
-      <div className="p-2 border-t">
-        <Link to="/invitations" className="block text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
+      <div className="p-2 border-t flex gap-2">
+        <Link to="/contacts" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
+          Contacts
+        </Link>
+        <Link to="/invitations" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
           Invitations
         </Link>
       </div>

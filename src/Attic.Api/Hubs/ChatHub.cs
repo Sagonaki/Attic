@@ -56,6 +56,32 @@ public sealed class ChatHub(
         var auth = AuthorizationRules.CanPostInChannel(member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
 
+        // Personal-chat: friendship + no-block gate.
+        var channel = await db.Channels.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == request.ChannelId);
+        if (channel is { Kind: Attic.Domain.Enums.ChannelKind.Personal })
+        {
+            var otherId = await db.ChannelMembers.AsNoTracking()
+                .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
+                .Select(m => m.UserId)
+                .FirstOrDefaultAsync();
+            if (otherId == Guid.Empty)
+                return new SendMessageResponse(false, null, null, "invalid_channel");
+
+            var (smaller, larger) = userId.Value.CompareTo(otherId) < 0
+                ? (userId.Value, otherId)
+                : (otherId, userId.Value);
+            var areFriends = await db.Friendships.AsNoTracking()
+                .AnyAsync(f => f.UserAId == smaller && f.UserBId == larger);
+            var hasBlock = await db.UserBlocks.AsNoTracking().AnyAsync(b =>
+                (b.BlockerId == userId.Value && b.BlockedId == otherId) ||
+                (b.BlockerId == otherId && b.BlockedId == userId.Value));
+
+            var personalAuth = AuthorizationRules.CanPostInPersonalChat(areFriends, hasBlock);
+            if (!personalAuth.Allowed)
+                return new SendMessageResponse(false, null, null, personalAuth.Reason.ToString());
+        }
+
         var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
         await db.SaveChangesAsync();

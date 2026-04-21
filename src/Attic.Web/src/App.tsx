@@ -16,6 +16,7 @@ export default function App() {
           <Route path="/chat/:channelId" element={<ChatShell />} />
           <Route path="/catalog" element={<ChatShell />} />
           <Route path="/invitations" element={<ChatShell />} />
+          <Route path="/contacts" element={<ChatShell />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
