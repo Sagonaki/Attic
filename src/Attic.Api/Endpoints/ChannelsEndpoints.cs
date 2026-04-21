@@ -21,6 +21,8 @@ public static class ChannelsEndpoints
 
         group.MapPost("/", CreateChannel);
         group.MapGet("/public", GetPublicCatalog).AllowAnonymous();
+        group.MapGet("/mine", GetMyChannels);
+        group.MapGet("/{id:guid}", GetChannelDetails);
 
         return routes;
     }
@@ -106,5 +108,72 @@ public static class ChannelsEndpoints
 
         var nextCursor = rows.Count == size ? rows[^1].Id.ToString("D") : null;
         return Results.Ok(new PagedResult<PublicCatalogItem>(items, nextCursor));
+    }
+
+    private static async Task<IResult> GetMyChannels(
+        AtticDbContext db,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var userId = currentUser.UserIdOrThrow;
+        var rows = await db.ChannelMembers.AsNoTracking()
+            .Where(m => m.UserId == userId)
+            .Join(db.Channels.AsNoTracking(),
+                  m => m.ChannelId,
+                  c => c.Id,
+                  (m, c) => new { m.Role, c.Id, c.Kind, c.Name, c.Description, c.OwnerId })
+            .ToListAsync(ct);
+
+        var ids = rows.Select(r => r.Id).ToList();
+        var counts = await db.ChannelMembers.AsNoTracking()
+            .Where(m => ids.Contains(m.ChannelId))
+            .GroupBy(m => m.ChannelId)
+            .Select(g => new { ChannelId = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        var countMap = counts.ToDictionary(c => c.ChannelId, c => c.Count);
+
+        var items = rows.Select(r => new ChannelSummary(
+            r.Id,
+            r.Kind.ToString().ToLowerInvariant(),
+            r.Name,
+            r.Description,
+            r.OwnerId,
+            countMap.TryGetValue(r.Id, out var n) ? n : 0,
+            UnreadCount: 0
+        )).ToList();
+
+        return Results.Ok(items);
+    }
+
+    private static async Task<IResult> GetChannelDetails(
+        Guid id,
+        AtticDbContext db,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var userId = currentUser.UserIdOrThrow;
+
+        var channel = await db.Channels.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (channel is null) return Results.NotFound();
+
+        var isMember = await db.ChannelMembers.AsNoTracking()
+            .AnyAsync(m => m.ChannelId == id && m.UserId == userId, ct);
+
+        if (channel.Kind == ChannelKind.Private && !isMember) return Results.Forbid();
+
+        var memberCount = await db.ChannelMembers.AsNoTracking().CountAsync(m => m.ChannelId == id, ct);
+
+        return Results.Ok(new ChannelDetails(
+            channel.Id,
+            channel.Kind.ToString().ToLowerInvariant(),
+            channel.Name,
+            channel.Description,
+            channel.OwnerId,
+            channel.CreatedAt,
+            memberCount));
     }
 }

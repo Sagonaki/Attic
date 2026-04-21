@@ -2041,14 +2041,14 @@ git commit -m "feat(api): GET /api/channels/public paginated catalog with prefix
 - Modify: `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/ChannelCrudFlowTests.cs`
 
-- [ ] **Step 20.1: Append routes in `MapChannelsEndpoints`**
+- [x] **Step 20.1: Append routes in `MapChannelsEndpoints`**
 
 ```csharp
         group.MapGet("/mine", GetMyChannels);
         group.MapGet("/{id:guid}", GetChannelDetails);
 ```
 
-- [ ] **Step 20.2: Append handlers to `ChannelsEndpoints.cs`**
+- [x] **Step 20.2: Append handlers to `ChannelsEndpoints.cs`**
 
 ```csharp
     private static async Task<IResult> GetMyChannels(
@@ -2121,7 +2121,7 @@ git commit -m "feat(api): GET /api/channels/public paginated catalog with prefix
     }
 ```
 
-- [ ] **Step 20.3: Append tests**
+- [x] **Step 20.3: Append tests**
 
 ```csharp
     [Fact]
@@ -2179,7 +2179,7 @@ git commit -m "feat(api): GET /api/channels/public paginated catalog with prefix
     }
 ```
 
-- [ ] **Step 20.4: Run + commit**
+- [x] **Step 20.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ChannelCrudFlowTests"
