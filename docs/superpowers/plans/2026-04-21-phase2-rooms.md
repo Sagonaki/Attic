@@ -525,7 +525,7 @@ git commit -m "feat(domain): add Channel.Rename and UpdateDescription with behav
 - Modify: `src/Attic.Domain/Services/AuthorizationRules.cs`
 - Modify: `tests/Attic.Domain.Tests/AuthorizationRulesTests.cs`
 
-- [ ] **Step 5.1: Append failing tests to `AuthorizationRulesTests.cs`**
+- [x] **Step 5.1: Append failing tests to `AuthorizationRulesTests.cs`**
 
 After the existing `AuthorizationRulesTests` class contents, add new test regions:
 
@@ -592,7 +592,7 @@ After the existing `AuthorizationRulesTests` class contents, add new test region
 
 Also add the `using` directives at the top of `AuthorizationRulesTests.cs` if not already present: `using Attic.Domain.Entities;`, `using Attic.Domain.Enums;`.
 
-- [ ] **Step 5.2: Run, verify fail**
+- [x] **Step 5.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanJoinChannel|CanLeaveChannel"
@@ -600,7 +600,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanJoinChannel|CanLeaveChannel"
 
 Expected: compile failure.
 
-- [ ] **Step 5.3: Append methods to `src/Attic.Domain/Services/AuthorizationRules.cs`**
+- [x] **Step 5.3: Append methods to `src/Attic.Domain/Services/AuthorizationRules.cs`**
 
 After `CanPostInChannel`, add:
 
@@ -628,7 +628,7 @@ After `CanPostInChannel`, add:
 
 Add `using Attic.Domain.Enums;` at the top if not present.
 
-- [ ] **Step 5.4: Run, verify pass**
+- [x] **Step 5.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
@@ -636,7 +636,7 @@ dotnet test tests/Attic.Domain.Tests
 
 Expected: all prior tests + 7 new = green.
 
-- [ ] **Step 5.5: Commit**
+- [x] **Step 5.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Services/AuthorizationRules.cs tests/Attic.Domain.Tests/AuthorizationRulesTests.cs

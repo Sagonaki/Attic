@@ -75,6 +75,15 @@ public class AuthorizationRulesTests
     }
 
     [Fact]
+    public void CanJoinChannel_denies_deleted_channel()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "room", null, Guid.NewGuid(), T0_J);
+        channel.SoftDelete(T0_J.AddMinutes(1));
+        var result = AuthorizationRules.CanJoinChannel(channel, existingMember: null);
+        result.Reason.ShouldBe(AuthorizationFailureReason.ChannelDeleted);
+    }
+
+    [Fact]
     public void CanLeaveChannel_allows_non_owner_member()
     {
         var channelId = Guid.NewGuid();
