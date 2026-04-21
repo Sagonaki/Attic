@@ -34,6 +34,26 @@ public sealed class AppHostFixture : IAsyncLifetime
         await App.ResourceNotifications
             .WaitForResourceAsync("api", KnownResourceStates.Running)
             .WaitAsync(TimeSpan.FromMinutes(3));
+
+        // Poll until the API is actually accepting TCP connections.
+        // KnownResourceStates.Running fires when the container starts, not when
+        // the ASP.NET process inside is bound and listening.
+        using var warmup = new HttpClient { BaseAddress = ApiClient.BaseAddress };
+        var deadline = DateTimeOffset.UtcNow.AddMinutes(2);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            try
+            {
+                var resp = await warmup.GetAsync("/api/auth/me");
+                // Any HTTP response (including 401) means the API is up.
+                _ = resp;
+                break;
+            }
+            catch (HttpRequestException)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
     }
 
     public async ValueTask DisposeAsync()
