@@ -26,6 +26,7 @@ export interface HubClient {
   onPresenceChanged(cb: (userId: string, state: PresenceState) => void): () => void;
   onUnreadChanged(cb: (channelId: string, count: number) => void): () => void;
   onForceLogout(cb: (sessionId: string) => void): () => void;
+  onReconnected(cb: () => void): () => void;
 }
 
 let singleton: HubClient | null = null;
@@ -100,6 +101,14 @@ export function getOrCreateHubClient(): HubClient {
     onPresenceChanged: (cb) => on<[string, PresenceState]>('PresenceChanged', cb),
     onUnreadChanged: (cb) => on<[string, number]>('UnreadChanged', cb),
     onForceLogout: (cb) => on<[string]>('ForceLogout', cb),
+    onReconnected(cb) {
+      const handler = () => cb();
+      connection.onreconnected(handler);
+      // @microsoft/signalr v8 has no `off` for onreconnected — callbacks accumulate
+      // for the lifetime of the connection (singleton scope). Callers should guard
+      // against stale closures with an `active` flag rather than relying on cleanup.
+      return () => { /* noop — no off() available in @microsoft/signalr v8 */ };
+    },
   };
 
   return singleton;
