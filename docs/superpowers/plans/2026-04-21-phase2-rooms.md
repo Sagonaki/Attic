@@ -1194,7 +1194,7 @@ git commit -m "feat(infra): migration AddChannelInvitations"
 
 Phase 2 introduces real CRUD, so the hardcoded lobby with `OwnerId = Guid.Empty` is no longer needed. Tests that posted to it will be updated in Checkpoint 2 to create their own channel.
 
-- [ ] **Step 13.1: Replace `SeedData.cs` contents**
+- [x] **Step 13.1: Replace `SeedData.cs` contents**
 
 ```csharp
 namespace Attic.Infrastructure.Persistence.Seed;
@@ -1209,7 +1209,7 @@ public static class SeedData
 }
 ```
 
-- [ ] **Step 13.2: Build + commit**
+- [x] **Step 13.2: Build + commit**
 
 ```bash
 dotnet build src/Attic.Infrastructure
