@@ -2673,12 +2673,12 @@ public sealed class SendMessageRequestValidator : AbstractValidator<SendMessageR
 {
     public SendMessageRequestValidator()
     {
-        RuleFor(r => r.ChannelId).NotEmpty();
-        RuleFor(r => r.ClientMessageId).NotEmpty();
+        RuleFor(r => r.ChannelId).NotEmpty().WithErrorCode("invalid_channel");
+        RuleFor(r => r.ClientMessageId).NotEmpty().WithErrorCode("invalid_client_message_id");
+        RuleFor(r => r.Content).NotEmpty().WithErrorCode("empty_content");
         RuleFor(r => r.Content)
-            .NotEmpty()
-            .Must(c => Encoding.UTF8.GetByteCount(c) <= 3072)
-            .WithMessage("Message content exceeds 3 KB.");
+            .Must(c => c is null || Encoding.UTF8.GetByteCount(c) <= 3072)
+            .WithErrorCode("content_too_large");
     }
 }
 ```
@@ -2992,15 +2992,18 @@ using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
 using Attic.Domain.Services;
 using Attic.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace Attic.Api.Hubs;
 
 [Authorize]
-public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
+public sealed class ChatHub(
+    AtticDbContext db,
+    IClock clock,
+    IValidator<SendMessageRequest> sendMessageValidator) : Hub
 {
     public const string Path = "/hub";
 
@@ -3029,10 +3032,9 @@ public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
         var userId = UserId;
         if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-            return new SendMessageResponse(false, null, null, "empty_content");
-        if (Encoding.UTF8.GetByteCount(request.Content) > Message.MaxContentBytes)
-            return new SendMessageResponse(false, null, null, "content_too_large");
+        var validation = await sendMessageValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return new SendMessageResponse(false, null, null, validation.Errors[0].ErrorCode);
 
         var member = await db.ChannelMembers
             .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason
