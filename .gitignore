@@ -1,2 +1,8 @@
 .DS_Store
 .worktrees/
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+.aspire/
