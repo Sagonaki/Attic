@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Contracts.Attachments;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
 using Attic.Domain.Entities;
@@ -84,10 +85,33 @@ public sealed class ChatHub(
 
         var msg = Message.Post(request.ChannelId, userId.Value, request.Content, request.ReplyToId, clock.UtcNow);
         db.Messages.Add(msg);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync();   // Populates message.Id.
+
+        if (request.AttachmentIds is { Length: > 0 })
+        {
+            var attachmentIds = request.AttachmentIds;
+            var attachments = await db.Attachments.AsTracking()
+                .Where(a => attachmentIds.Contains(a.Id)
+                            && a.UploaderId == userId.Value
+                            && a.MessageId == null)
+                .ToListAsync();
+            if (attachments.Count != attachmentIds.Length)
+                return new SendMessageResponse(false, null, null, "invalid_attachments");
+
+            foreach (var a in attachments) a.BindToMessage(msg.Id);
+            await db.SaveChangesAsync();
+        }
 
         var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
-        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null);
+
+        var attachmentDtos = await db.Attachments.AsNoTracking()
+            .Where(a => a.MessageId == msg.Id)
+            .Select(a => new AttachmentDto(
+                a.Id, a.OriginalFileName, a.ContentType, a.SizeBytes, a.Comment))
+            .ToArrayAsync();
+
+        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
+            attachmentDtos.Length > 0 ? attachmentDtos : null);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
