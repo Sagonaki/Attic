@@ -1387,7 +1387,7 @@ git commit -m "refactor(api): drop Phase-1 auto-join shortcut from ChatHub.SendM
 
 Phase 1 allowed any authenticated user to read messages from any channel. Phase 2 restricts reads to non-banned members (including admins/owners). Read access remains broader than write for admins viewing banned users (via `.IgnoreQueryFilters`) — Phase 2 does NOT need that; catalog scan is distinct and goes through `/api/channels/public`.
 
-- [ ] **Step 15.1: Replace `MessagesEndpoints.GetBeforeCursor`**
+- [x] **Step 15.1: Replace `MessagesEndpoints.GetBeforeCursor`**
 
 Open `src/Attic.Api/Endpoints/MessagesEndpoints.cs`. Replace the handler body with:
 
@@ -1432,7 +1432,7 @@ Open `src/Attic.Api/Endpoints/MessagesEndpoints.cs`. Replace the handler body wi
     }
 ```
 
-- [ ] **Step 15.2: Build + commit**
+- [x] **Step 15.2: Build + commit**
 
 ```bash
 dotnet build src/Attic.Api

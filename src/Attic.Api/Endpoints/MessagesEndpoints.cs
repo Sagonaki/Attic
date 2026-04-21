@@ -25,7 +25,11 @@ public static class MessagesEndpoints
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
 
-        // Phase 1: membership check deferred to Phase 2. Any authenticated user can read any channel.
+        // Membership (non-banned) required to read a channel's message history.
+        var isMember = await db.ChannelMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.ChannelId == channelId && m.UserId == currentUser.UserIdOrThrow, ct);
+        if (!isMember) return Results.Forbid();
 
         var size = Math.Clamp(limit ?? 50, 1, 200);
 
