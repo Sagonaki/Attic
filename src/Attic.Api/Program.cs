@@ -38,6 +38,11 @@ builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
 builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
 
+builder.Services.Configure<Attic.Infrastructure.Storage.AttachmentStorageOptions>(
+    builder.Configuration.GetSection("Attachments"));
+builder.Services.AddSingleton<Attic.Infrastructure.Storage.IAttachmentStorage,
+                              Attic.Infrastructure.Storage.FilesystemAttachmentStorage>();
+
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins("http://localhost:3000", "https://localhost:3000")
     .AllowAnyHeader()
