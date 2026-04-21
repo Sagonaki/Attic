@@ -3055,7 +3055,7 @@ git commit -m "feat(api): GET /api/channels/{id}/bans + DELETE .../bans/{userId}
 
 Four routes in one task because each one is small and the tests cross-cut. `POST /api/channels/{channelId}/invitations` hangs off the channels group; the rest live under `/api/invitations`.
 
-- [ ] **Step 29.1: Write `InvitationsEndpoints.cs`**
+- [x] **Step 29.1: Write `InvitationsEndpoints.cs`**
 
 ```csharp
 using Attic.Api.Auth;
@@ -3213,13 +3213,13 @@ public static class InvitationsEndpoints
 }
 ```
 
-- [ ] **Step 29.2: Map in `Program.cs`**
+- [x] **Step 29.2: Map in `Program.cs`**
 
 ```csharp
 app.MapInvitationsEndpoints();
 ```
 
-- [ ] **Step 29.3: Write `InvitationFlowTests.cs`**
+- [x] **Step 29.3: Write `InvitationFlowTests.cs`**
 
 ```csharp
 using System.Net;
@@ -3340,7 +3340,7 @@ public sealed class InvitationFlowTests(AppHostFixture fx)
 }
 ```
 
-- [ ] **Step 29.4: Run + commit**
+- [x] **Step 29.4: Run + commit**
 
 ```bash
 export DOCKER_HOST=unix:///var/folders/32/wf0lxrcx6fzgd284x_b2wgf80000gn/T/podman/podman-machine-default-api.sock
