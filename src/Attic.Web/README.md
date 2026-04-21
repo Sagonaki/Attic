@@ -1,20 +1,17 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Attic — Web Frontend
 
-# Run and deploy your AI Studio app
+React 19 + Vite + Tailwind 4 SPA for the Attic chat application.
 
-This contains everything you need to run your app locally.
+Not a standalone app. Runs under .NET Aspire orchestration alongside the ASP.NET Core API, Postgres, and Redis. See the repo root for the full stack and design spec.
 
-View your app in AI Studio: https://ai.studio/apps/ee1d1ec9-7fc4-4872-af19-2b43b19bbb2a
+## Scripts
 
-## Run Locally
+- `npm run dev` — Vite dev server on `:3000`. Proxies `/api` and `/hub` to the API (URL comes from Aspire env vars, falls back to `http://localhost:5000`).
+- `npm run build` — Production build to `dist/`.
+- `npm run lint` — `tsc --noEmit` typecheck.
 
-**Prerequisites:**  Node.js
+## Stack
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- React 19, TanStack Query v5, React Router v6, `@microsoft/signalr` v8, Tailwind CSS v4.
+- State: TanStack Query cache for REST; SignalR pushes into the same cache.
+- Auth: server-set cookie; the SPA gates routes with `AuthGate` and exposes `useAuth()`.

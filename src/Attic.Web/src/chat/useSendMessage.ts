@@ -1,11 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getOrCreateHubClient } from '../api/signalr';
 import type { MessageDto, PagedResult } from '../types';
 
 export function useSendMessage(channelId: string, currentUser: { id: string; username: string }) {
   const qc = useQueryClient();
-  const queryKey = ['channel-messages', channelId] as const;
+  const queryKey = useMemo(() => ['channel-messages', channelId] as const, [channelId]);
 
   return useCallback(async (content: string) => {
     const clientMessageId = crypto.randomUUID();
@@ -55,6 +55,5 @@ export function useSendMessage(channelId: string, currentUser: { id: string; use
       });
       throw err;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelId, currentUser.id, currentUser.username, qc]);
+  }, [channelId, currentUser.id, currentUser.username, qc, queryKey]);
 }

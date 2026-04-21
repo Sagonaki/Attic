@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { api } from '../api/client';
 import { getOrCreateHubClient } from '../api/signalr';
 import type { MessageDto, PagedResult } from '../types';
@@ -8,7 +8,7 @@ const PAGE_SIZE = 50;
 
 export function useChannelMessages(channelId: string) {
   const qc = useQueryClient();
-  const queryKey = ['channel-messages', channelId] as const;
+  const queryKey = useMemo(() => ['channel-messages', channelId] as const, [channelId]);
 
   const query = useInfiniteQuery({
     queryKey,
@@ -43,8 +43,7 @@ export function useChannelMessages(channelId: string) {
       off();
       void hub.unsubscribeFromChannel(channelId);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelId, qc]);
+  }, [channelId, qc, queryKey]);
 
   const items = (query.data?.pages ?? []).flatMap(p => p.items);
   return { ...query, items };
