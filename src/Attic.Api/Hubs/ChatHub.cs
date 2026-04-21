@@ -1,4 +1,3 @@
-using System.Text;
 using Attic.Api.Auth;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
@@ -6,6 +5,7 @@ using Attic.Domain.Entities;
 using Attic.Domain.Enums;
 using Attic.Domain.Services;
 using Attic.Infrastructure.Persistence;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +13,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Attic.Api.Hubs;
 
 [Authorize]
-public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
+public sealed class ChatHub(
+    AtticDbContext db,
+    IClock clock,
+    IValidator<SendMessageRequest> sendMessageValidator) : Hub
 {
     public const string Path = "/hub";
 
@@ -42,10 +45,9 @@ public sealed class ChatHub(AtticDbContext db, IClock clock) : Hub
         var userId = UserId;
         if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
 
-        if (string.IsNullOrWhiteSpace(request.Content))
-            return new SendMessageResponse(false, null, null, "empty_content");
-        if (Encoding.UTF8.GetByteCount(request.Content) > Message.MaxContentBytes)
-            return new SendMessageResponse(false, null, null, "content_too_large");
+        var validation = await sendMessageValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return new SendMessageResponse(false, null, null, validation.Errors[0].ErrorCode);
 
         var member = await db.ChannelMembers
             .IgnoreQueryFilters()  // we want banned rows too so we can report the correct reason

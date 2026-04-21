@@ -8,11 +8,11 @@ public sealed class SendMessageRequestValidator : AbstractValidator<SendMessageR
 {
     public SendMessageRequestValidator()
     {
-        RuleFor(r => r.ChannelId).NotEmpty();
-        RuleFor(r => r.ClientMessageId).NotEmpty();
+        RuleFor(r => r.ChannelId).NotEmpty().WithErrorCode("invalid_channel");
+        RuleFor(r => r.ClientMessageId).NotEmpty().WithErrorCode("invalid_client_message_id");
+        RuleFor(r => r.Content).NotEmpty().WithErrorCode("empty_content");
         RuleFor(r => r.Content)
-            .NotEmpty()
-            .Must(c => Encoding.UTF8.GetByteCount(c) <= 3072)
-            .WithMessage("Message content exceeds 3 KB.");
+            .Must(c => c is null || Encoding.UTF8.GetByteCount(c) <= 3072)
+            .WithErrorCode("content_too_large");
     }
 }
