@@ -1,19 +1,24 @@
+import { useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import { ChatWindow } from './ChatWindow';
+import { Sidebar } from './Sidebar';
+import { CreateRoomModal } from './CreateRoomModal';
+import { PublicCatalog } from './PublicCatalog';
+import { RoomDetails } from './RoomDetails';
+import { InvitationsInbox } from './InvitationsInbox';
 import { disposeHubClient } from '../api/signalr';
-import { useNavigate } from 'react-router-dom';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { channelId } = useParams<{ channelId: string }>();
+  const [createOpen, setCreateOpen] = useState(false);
 
   async function logout() {
-    try {
-      await api.post<void>('/api/auth/logout');
-    } catch {
-      // ignore
-    }
+    try { await api.post<void>('/api/auth/logout'); } catch { /* ignore */ }
     disposeHubClient();
     setUser(null);
     navigate('/login', { replace: true });
@@ -22,15 +27,26 @@ export function ChatShell() {
   return (
     <div className="h-screen flex flex-col">
       <header className="flex items-center justify-between px-4 py-2 border-b bg-white">
-        <div className="font-semibold">Attic · #lobby</div>
+        <div className="font-semibold">Attic</div>
         <div className="text-sm text-slate-600">
           {user?.username}
           <button onClick={logout} className="ml-4 text-blue-600">Sign out</button>
         </div>
       </header>
-      <main className="flex-1 overflow-hidden">
-        <ChatWindow />
-      </main>
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar onCreate={() => setCreateOpen(true)} />
+        <main className="flex-1 flex overflow-hidden">
+          {pathname === '/catalog' && <PublicCatalog />}
+          {pathname === '/invitations' && <InvitationsInbox />}
+          {pathname !== '/catalog' && pathname !== '/invitations' && (
+            <>
+              <div className="flex-1 flex flex-col"><ChatWindow /></div>
+              {channelId && <RoomDetails channelId={channelId} />}
+            </>
+          )}
+        </main>
+      </div>
+      {createOpen && <CreateRoomModal onClose={() => setCreateOpen(false)} />}
     </div>
   );
 }
