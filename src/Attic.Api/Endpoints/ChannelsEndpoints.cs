@@ -23,6 +23,7 @@ public static class ChannelsEndpoints
         group.MapGet("/public", GetPublicCatalog).AllowAnonymous();
         group.MapGet("/mine", GetMyChannels);
         group.MapGet("/{id:guid}", GetChannelDetails);
+        group.MapPatch("/{id:guid}", UpdateChannel);
 
         return routes;
     }
@@ -167,6 +168,54 @@ public static class ChannelsEndpoints
 
         var memberCount = await db.ChannelMembers.AsNoTracking().CountAsync(m => m.ChannelId == id, ct);
 
+        return Results.Ok(new ChannelDetails(
+            channel.Id,
+            channel.Kind.ToString().ToLowerInvariant(),
+            channel.Name,
+            channel.Description,
+            channel.OwnerId,
+            channel.CreatedAt,
+            memberCount));
+    }
+
+    private static async Task<IResult> UpdateChannel(
+        Guid id,
+        [FromBody] UpdateChannelRequest req,
+        IValidator<UpdateChannelRequest> validator,
+        AtticDbContext db,
+        IClock clock,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var vr = await validator.ValidateAsync(req, ct);
+        if (!vr.IsValid)
+            return Results.BadRequest(new ApiError(vr.Errors[0].ErrorCode, vr.Errors[0].ErrorMessage));
+
+        var channel = await db.Channels.AsTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (channel is null) return Results.NotFound();
+
+        var auth = Attic.Domain.Services.AuthorizationRules.CanDeleteChannel(channel, currentUser.UserIdOrThrow);
+        // Reuse CanDeleteChannel because update is also owner-only.
+        if (!auth.Allowed) return Results.Forbid();
+
+        if (req.Name is not null)
+        {
+            var trimmed = req.Name.Trim();
+            var nameTaken = await db.Channels
+                .AnyAsync(c => c.Name == trimmed && c.Id != id && c.Kind != ChannelKind.Personal, ct);
+            if (nameTaken) return Results.Conflict(new ApiError("name_taken", "Channel name is already taken."));
+            channel.Rename(trimmed, clock.UtcNow);
+        }
+        if (req.Description is not null)
+        {
+            channel.UpdateDescription(req.Description, clock.UtcNow);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var memberCount = await db.ChannelMembers.AsNoTracking().CountAsync(m => m.ChannelId == id, ct);
         return Results.Ok(new ChannelDetails(
             channel.Id,
             channel.Kind.ToString().ToLowerInvariant(),

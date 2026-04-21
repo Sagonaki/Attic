@@ -2195,13 +2195,13 @@ git commit -m "feat(api): GET /api/channels/mine and /api/channels/{id}"
 - Modify: `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/ChannelCrudFlowTests.cs`
 
-- [ ] **Step 21.1: Append route**
+- [x] **Step 21.1: Append route**
 
 ```csharp
         group.MapPatch("/{id:guid}", UpdateChannel);
 ```
 
-- [ ] **Step 21.2: Append handler**
+- [x] **Step 21.2: Append handler**
 
 ```csharp
     private static async Task<IResult> UpdateChannel(
@@ -2253,7 +2253,7 @@ git commit -m "feat(api): GET /api/channels/mine and /api/channels/{id}"
     }
 ```
 
-- [ ] **Step 21.3: Append tests**
+- [x] **Step 21.3: Append tests**
 
 ```csharp
     [Fact]
@@ -2293,7 +2293,7 @@ git commit -m "feat(api): GET /api/channels/mine and /api/channels/{id}"
     }
 ```
 
-- [ ] **Step 21.4: Run + commit**
+- [x] **Step 21.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ChannelCrudFlowTests"
