@@ -204,7 +204,7 @@ Expected: `Attic.slnx` is created.
 
     <!-- Auxiliary -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="10.0.0" />
+    <!-- Note: Microsoft.AspNetCore.Identity is part of the Microsoft.AspNetCore.App shared framework in .NET 5+; no standalone NuGet package is needed. `IPasswordHasher<T>` is pulled in via FrameworkReference below. -->
 
     <!-- Observability -->
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
@@ -338,13 +338,17 @@ Edit `src/Attic.Infrastructure/Attic.Infrastructure.csproj`:
     <ProjectReference Include="..\Attic.Domain\Attic.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity" />
   </ItemGroup>
 </Project>
 ```
+
+The `FrameworkReference` pulls in `Microsoft.AspNetCore.Identity.IPasswordHasher<T>` (part of the shared framework since .NET 5); no standalone NuGet package is required.
 
 - [ ] **Step 4.3: Build**
 
@@ -393,13 +397,14 @@ dotnet sln Attic.slnx add src/Attic.Api/Attic.Api.csproj
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity" />
     <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Aspire.StackExchange.Redis" />
   </ItemGroup>
 </Project>
 ```
+
+(`IPasswordHasher<T>` comes in via `Microsoft.NET.Sdk.Web`'s implicit `Microsoft.AspNetCore.App` framework reference; no explicit `Microsoft.AspNetCore.Identity` package is needed.)
 
 - [ ] **Step 5.3: Replace `Program.cs` with a minimal placeholder**
 
