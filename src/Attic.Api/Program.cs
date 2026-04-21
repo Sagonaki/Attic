@@ -42,6 +42,7 @@ builder.Services.Configure<Attic.Infrastructure.Storage.AttachmentStorageOptions
     builder.Configuration.GetSection("Attachments"));
 builder.Services.AddSingleton<Attic.Infrastructure.Storage.IAttachmentStorage,
                               Attic.Infrastructure.Storage.FilesystemAttachmentStorage>();
+builder.Services.AddHostedService<Attic.Api.Services.AttachmentSweeperService>();
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins("http://localhost:3000", "https://localhost:3000")
