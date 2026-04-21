@@ -181,19 +181,19 @@ Expected: `Attic.slnx` is created.
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AspireVersion>9.1.0</AspireVersion>
-    <EfCoreVersion>10.0.0</EfCoreVersion>
+    <AspireVersion>13.2.2</AspireVersion>
+    <EfCoreVersion>10.0.5</EfCoreVersion>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Aspire -->
+    <!-- Aspire (use the latest 13.x your NuGet feed has; pin to a known-working combo) -->
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
-    <PackageVersion Include="Aspire.Hosting.NodeJs" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="$(AspireVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="$(AspireVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
 
     <!-- ASP.NET Core / EF Core -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
@@ -571,14 +571,14 @@ dotnet sln Attic.slnx add src/Attic.AppHost/Attic.AppHost.csproj
 If `aspire-apphost` template is not installed, install it first:
 
 ```bash
-dotnet new install Aspire.ProjectTemplates::9.1.0
+dotnet new install Aspire.ProjectTemplates::13.2.2
 ```
 
 - [ ] **Step 7.2: Replace `Attic.AppHost.csproj` contents**
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.1.0" />
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.2.2" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsAspireHost>true</IsAspireHost>
@@ -588,7 +588,7 @@ dotnet new install Aspire.ProjectTemplates::9.1.0
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Redis" />
-    <PackageReference Include="Aspire.Hosting.NodeJs" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Attic.Api\Attic.Api.csproj" />
@@ -614,11 +614,9 @@ var api = builder.AddProject<Projects.Attic_Api>("api")
     .WaitFor(postgres)
     .WaitFor(redis);
 
-builder.AddNpmApp("web", "../Attic.Web", "dev")
+builder.AddViteApp("web", "../Attic.Web")
     .WithReference(api)
-    .WithHttpEndpoint(port: 3000, env: "PORT")
-    .WithExternalHttpEndpoints()
-    .PublishAsDockerFile();
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
 ```
@@ -629,9 +627,9 @@ builder.Build().Run();
 dotnet build src/Attic.AppHost/Attic.AppHost.csproj
 ```
 
-Expected: Build fails because `Attic.Web` directory does not exist yet — that's fine; we will create it next. Build the AppHost again after Task 8. Temporarily comment out the `AddNpmApp(...)` call to get a green build here, then restore it in Task 8.
+Expected: Build fails because `Attic.Web` directory does not exist yet — that's fine; we will create it next. Build the AppHost again after Task 8. Temporarily comment out the `AddViteApp(...)` call to get a green build here, then restore it in Task 8.
 
-- [ ] **Step 7.5: Commit (with Npm block commented out)**
+- [ ] **Step 7.5: Commit (with Vite block commented out)**
 
 ```bash
 git add src/Attic.AppHost Attic.slnx
@@ -702,9 +700,9 @@ cd src/Attic.Web && npm install && cd -
 
 Expected: `npm install` completes without errors.
 
-- [ ] **Step 8.4: Uncomment the `AddNpmApp` block in `src/Attic.AppHost/Program.cs`**
+- [ ] **Step 8.4: Uncomment the `AddViteApp` block in `src/Attic.AppHost/Program.cs`**
 
-Restore the `builder.AddNpmApp("web", "../Attic.Web", "dev")…` call from Task 7 if it was commented out.
+Restore the `builder.AddViteApp("web", "../Attic.Web")…` call from Task 7 if it was commented out.
 
 - [ ] **Step 8.5: Build**
 
