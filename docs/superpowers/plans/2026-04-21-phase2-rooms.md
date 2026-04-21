@@ -1153,7 +1153,7 @@ git commit -m "feat(infra): add ChannelInvitation EF Core configuration"
 - Generated: `src/Attic.Infrastructure/Persistence/Migrations/*_AddChannelInvitations.cs`
 - Generated: `src/Attic.Infrastructure/Persistence/Migrations/AtticDbContextModelSnapshot.cs` (auto-updated)
 
-- [ ] **Step 12.1: Generate the migration**
+- [x] **Step 12.1: Generate the migration**
 
 ```bash
 dotnet tool run dotnet-ef migrations add AddChannelInvitations \
@@ -1162,7 +1162,7 @@ dotnet tool run dotnet-ef migrations add AddChannelInvitations \
   --output-dir Persistence/Migrations
 ```
 
-- [ ] **Step 12.2: Generate the idempotent SQL script and sanity-check**
+- [x] **Step 12.2: Generate the idempotent SQL script and sanity-check**
 
 ```bash
 dotnet tool run dotnet-ef migrations script --project src/Attic.Infrastructure \
@@ -1177,7 +1177,7 @@ Expected excerpts:
 
 If the filter clause reads `WHERE "Status" = 0` or quotes any column, STOP — that's the Phase-2-facing recurrence of the Checkpoint-2 snake_case-raw-SQL bug. Fix in the configuration (see Task 11) and regenerate.
 
-- [ ] **Step 12.3: Build + commit**
+- [x] **Step 12.3: Build + commit**
 
 ```bash
 dotnet build Attic.slnx
