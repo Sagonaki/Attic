@@ -1,2 +1,5 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Attic.Domain/Attic.Domain.csproj" />
+  </Folder>
 </Solution>
