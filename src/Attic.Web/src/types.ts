@@ -31,3 +31,81 @@ export interface SendMessageResponse {
   createdAt: string | null;
   error: string | null;
 }
+
+export interface UserSummary {
+  id: string;
+  username: string;
+}
+
+export interface ChannelSummary {
+  id: string;
+  kind: 'public' | 'private' | 'personal';
+  name: string | null;
+  description: string | null;
+  ownerId: string | null;
+  memberCount: number;
+  unreadCount: number;
+}
+
+export interface ChannelDetails {
+  id: string;
+  kind: 'public' | 'private' | 'personal';
+  name: string | null;
+  description: string | null;
+  ownerId: string | null;
+  createdAt: string;
+  memberCount: number;
+}
+
+export interface CreateChannelRequest {
+  name: string;
+  description: string | null;
+  kind: 'public' | 'private';
+}
+
+export interface UpdateChannelRequest {
+  name: string | null;
+  description: string | null;
+}
+
+export interface ChannelMemberSummary {
+  userId: string;
+  username: string;
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: string;
+}
+
+export interface BannedMemberSummary {
+  userId: string;
+  username: string;
+  bannedById: string;
+  bannedByUsername: string | null;
+  bannedAt: string;
+  reason: string | null;
+}
+
+export interface ChangeRoleRequest {
+  role: 'admin' | 'member';
+}
+
+export interface PublicCatalogItem {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+}
+
+export interface InvitationDto {
+  id: string;
+  channelId: string;
+  channelName: string;
+  inviterId: string;
+  inviterUsername: string;
+  status: string;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface InviteToChannelRequest {
+  username: string;
+}
