@@ -43,9 +43,9 @@ public sealed class User
     public void SoftDelete(DateTimeOffset at)
     {
         DeletedAt = at;
-        var tomb = Id.ToString("D");
-        Email = $"deleted-{tomb}@void";
-        Username = $"deleted-{tomb}";
+        var idHex = Id.ToString("N");             // 32 hex chars, no dashes
+        Email = $"deleted-{Id:D}@void";           // email column is 320 max
+        Username = $"deleted-{idHex}"[..32];      // username column is 32 max; "deleted-" = 8, take 24 hex chars
     }
 
     public void ChangePasswordHash(string newHash)

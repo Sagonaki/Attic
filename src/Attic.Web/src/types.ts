@@ -176,3 +176,18 @@ export interface SendMessageRequest {
   replyToId: number | null;
   attachmentIds: string[] | null;
 }
+
+export type PresenceState = 'online' | 'afk' | 'offline';
+
+export interface ActiveSessionDto {
+  id: string;
+  userAgent: string;
+  ip: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  isCurrent: boolean;
+}
+
+export interface DeleteAccountRequest {
+  password: string;
+}

@@ -17,7 +17,8 @@ public sealed class ChatHub(
     AtticDbContext db,
     IClock clock,
     IValidator<SendMessageRequest> sendMessageValidator,
-    IValidator<EditMessageRequest> editValidator) : Hub
+    IValidator<EditMessageRequest> editValidator,
+    Attic.Infrastructure.Presence.IPresenceStore presenceStore) : Hub
 {
     public const string Path = "/hub";
 
@@ -39,6 +40,16 @@ public sealed class ChatHub(
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.User(userId.Value));
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Session(sessionId.Value));
         await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var userId = UserId;
+        if (userId is not null)
+        {
+            await presenceStore.RemoveConnectionAsync(userId.Value, Context.ConnectionId, Context.ConnectionAborted);
+        }
+        await base.OnDisconnectedAsync(exception);
     }
 
     public async Task<SendMessageResponse> SendMessage(SendMessageRequest request)
@@ -116,6 +127,24 @@ public sealed class ChatHub(
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
+        // Bump per-member unread counters (except the sender).
+        var memberIds = await db.ChannelMembers.AsNoTracking()
+            .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
+            .Select(m => m.UserId)
+            .ToListAsync();
+
+        foreach (var memberId in memberIds)
+        {
+            var read = await db.ChannelReads.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.ChannelId == request.ChannelId && r.UserId == memberId);
+            var lastRead = read?.LastReadMessageId ?? 0;
+            var unreadCount = await db.Messages.AsNoTracking()
+                .CountAsync(m => m.ChannelId == request.ChannelId && m.Id > lastRead);
+
+            await Clients.Group(GroupNames.User(memberId))
+                .SendAsync("UnreadChanged", request.ChannelId, unreadCount);
+        }
+
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }
 
@@ -183,6 +212,44 @@ public sealed class ChatHub(
             .SendAsync("MessageEdited", msg.ChannelId, msg.Id, msg.Content, msg.UpdatedAt);
 
         return new EditMessageResponse(true, msg.UpdatedAt, null);
+    }
+
+    public async Task Heartbeat(string state)
+    {
+        var userId = UserId;
+        if (userId is null) return;
+
+        if (state != "active" && state != "idle") return;
+
+        var tabState = state == "active"
+            ? Attic.Infrastructure.Presence.TabState.Active
+            : Attic.Infrastructure.Presence.TabState.Idle;
+
+        var nowMs = clock.UtcNow.ToUnixTimeMilliseconds();
+        await presenceStore.WriteHeartbeatAsync(userId.Value, Context.ConnectionId, tabState, nowMs, Context.ConnectionAborted);
+    }
+
+    public async Task<object> MarkRead(Guid channelId, long lastMessageId)
+    {
+        var userId = UserId;
+        if (userId is null) return new { ok = false };
+
+        var existing = await db.ChannelReads.AsTracking()
+            .FirstOrDefaultAsync(r => r.ChannelId == channelId && r.UserId == userId.Value);
+        if (existing is null)
+        {
+            db.ChannelReads.Add(Attic.Domain.Entities.ChannelRead.Create(channelId, userId.Value, lastMessageId, clock.UtcNow));
+        }
+        else
+        {
+            existing.MarkRead(lastMessageId, clock.UtcNow);
+        }
+        await db.SaveChangesAsync();
+
+        await Clients.Group(GroupNames.User(userId.Value))
+            .SendAsync("UnreadChanged", channelId, 0);
+
+        return new { ok = true };
     }
 }
 

@@ -10,6 +10,7 @@ public sealed class CurrentUser
     public bool IsAuthenticated => UserId.HasValue;
     public Guid UserIdOrThrow => UserId ?? throw new InvalidOperationException("Not authenticated.");
     public Guid SessionIdOrThrow => SessionId ?? throw new InvalidOperationException("Not authenticated.");
+    public Guid? SessionIdOrNull => SessionId;
 
     public static Guid? ReadUserId(ClaimsPrincipal principal)
         => Guid.TryParse(principal.FindFirst(AtticClaims.UserId)?.Value, out var id) ? id : null;

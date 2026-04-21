@@ -139,6 +139,18 @@ public static class ChannelsEndpoints
             .ToListAsync(ct);
         var countMap = counts.ToDictionary(c => c.ChannelId, c => c.Count);
 
+        var readMap = await db.ChannelReads.AsNoTracking()
+            .Where(r => r.UserId == userId)
+            .ToDictionaryAsync(r => r.ChannelId, r => r.LastReadMessageId, ct);
+
+        var unreadMap = new Dictionary<Guid, int>();
+        foreach (var r in rows)
+        {
+            var lastRead = readMap.TryGetValue(r.Id, out var lr) ? lr : 0;
+            unreadMap[r.Id] = await db.Messages.AsNoTracking()
+                .CountAsync(m => m.ChannelId == r.Id && m.Id > lastRead, ct);
+        }
+
         var items = rows.Select(r => new ChannelSummary(
             r.Id,
             r.Kind.ToString().ToLowerInvariant(),
@@ -146,7 +158,7 @@ public static class ChannelsEndpoints
             r.Description,
             r.OwnerId,
             countMap.TryGetValue(r.Id, out var n) ? n : 0,
-            UnreadCount: 0
+            UnreadCount: unreadMap.TryGetValue(r.Id, out var u) ? u : 0
         )).ToList();
 
         return Results.Ok(items);

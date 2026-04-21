@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { channelsApi } from '../api/channels';
 import { getOrCreateHubClient } from '../api/signalr';
+import { useUnreadCountsSubscription } from './useUnreadCounts';
 
 export function useChannelList() {
   const qc = useQueryClient();
@@ -19,6 +20,8 @@ export function useChannelList() {
     const offRemoved = hub.onRemovedFromChannel(() => { void qc.invalidateQueries({ queryKey: ['channels', 'mine'] }); });
     return () => { offJoined(); offLeft(); offDeleted(); offRemoved(); };
   }, [qc]);
+
+  useUnreadCountsSubscription();
 
   return query;
 }
