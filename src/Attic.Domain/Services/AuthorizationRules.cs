@@ -83,4 +83,20 @@ public static class AuthorizationRules
         }
         return AuthorizationResult.Deny(AuthorizationFailureReason.NotAuthor);
     }
+
+    public static AuthorizationResult CanInviteToChannel(
+        Channel channel,
+        ChannelMember? inviter,
+        ChannelMember? inviteeExistingMembership,
+        bool hasPendingInvitation)
+    {
+        if (channel.DeletedAt is not null) return AuthorizationResult.Deny(AuthorizationFailureReason.ChannelDeleted);
+        if (channel.Kind != Enums.ChannelKind.Private) return AuthorizationResult.Deny(AuthorizationFailureReason.CannotInviteToPublic);
+        if (inviter is null || inviter.BannedAt is not null)
+            return AuthorizationResult.Deny(AuthorizationFailureReason.NotAMember);
+        if (inviteeExistingMembership is not null && inviteeExistingMembership.BannedAt is null)
+            return AuthorizationResult.Deny(AuthorizationFailureReason.AlreadyMember);
+        if (hasPendingInvitation) return AuthorizationResult.Deny(AuthorizationFailureReason.AlreadyInvited);
+        return AuthorizationResult.Ok();
+    }
 }

@@ -279,4 +279,49 @@ public class AuthorizationRulesTests
         AuthorizationRules.CanDeleteMessage(message, actor.UserId, actor, ChannelKind.Public).Reason
             .ShouldBe(AuthorizationFailureReason.NotAuthor);
     }
+
+    [Fact]
+    public void CanInviteToChannel_member_of_private_can_invite_non_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, inviteeExistingMembership: null, hasPendingInvitation: false)
+            .Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_inviting_to_public_room()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Public, "lobby", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, null, false).Reason
+            .ShouldBe(AuthorizationFailureReason.CannotInviteToPublic);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_non_member_inviter()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter: null, null, false).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAMember);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_invitee_already_member()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var existing = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, existing, false).Reason
+            .ShouldBe(AuthorizationFailureReason.AlreadyMember);
+    }
+
+    [Fact]
+    public void CanInviteToChannel_denies_invitee_with_pending_invitation()
+    {
+        var channel = Channel.CreateRoom(Guid.NewGuid(), ChannelKind.Private, "vip", null, Guid.NewGuid(), T0_J);
+        var inviter = ChannelMember.Join(channel.Id, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanInviteToChannel(channel, inviter, null, hasPendingInvitation: true).Reason
+            .ShouldBe(AuthorizationFailureReason.AlreadyInvited);
+    }
 }

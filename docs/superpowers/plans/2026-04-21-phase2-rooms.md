@@ -1005,7 +1005,7 @@ git commit -m "feat(domain): add CanDeleteMessage rule"
 - Modify: `src/Attic.Domain/Services/AuthorizationRules.cs`
 - Modify: `tests/Attic.Domain.Tests/AuthorizationRulesTests.cs`
 
-- [ ] **Step 10.1: Append tests**
+- [x] **Step 10.1: Append tests**
 
 ```csharp
     [Fact]
@@ -1054,13 +1054,13 @@ git commit -m "feat(domain): add CanDeleteMessage rule"
     }
 ```
 
-- [ ] **Step 10.2: Run, verify fail**
+- [x] **Step 10.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanInviteToChannel"
 ```
 
-- [ ] **Step 10.3: Append method to `AuthorizationRules.cs`**
+- [x] **Step 10.3: Append method to `AuthorizationRules.cs`**
 
 ```csharp
     public static AuthorizationResult CanInviteToChannel(
@@ -1080,7 +1080,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanInviteToChannel"
     }
 ```
 
-- [ ] **Step 10.4: Run, verify pass; commit**
+- [x] **Step 10.4: Run, verify pass; commit**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
