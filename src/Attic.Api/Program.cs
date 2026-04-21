@@ -44,6 +44,7 @@ builder.Services.AddSingleton<Attic.Infrastructure.Presence.IPresenceStore,
 
 builder.Services.AddScoped<Attic.Api.Hubs.PresenceEventBroadcaster>();
 builder.Services.AddHostedService<Attic.Api.Services.PresenceHostedService>();
+builder.Services.AddScoped<Attic.Api.Hubs.SessionsEventBroadcaster>();
 
 builder.Services.Configure<Attic.Infrastructure.Storage.AttachmentStorageOptions>(
     builder.Configuration.GetSection("Attachments"));
@@ -84,6 +85,7 @@ app.MapFriendsEndpoints();
 app.MapUsersEndpoints();
 app.MapPersonalChatsEndpoints();
 app.MapAttachmentsEndpoints();
+app.MapSessionsEndpoints();
 app.MapHub<Attic.Api.Hubs.ChatHub>(Attic.Api.Hubs.ChatHub.Path).RequireAuthorization();
 
 // Apply migrations + seed on startup (Phase 1; production uses a separate migration job later).
