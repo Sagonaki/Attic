@@ -2923,14 +2923,14 @@ git commit -m "feat(api): POST /api/channels/{id}/members/{userId}/role"
 - Modify: `src/Attic.Api/Endpoints/ChannelMembersEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/ModerationFlowTests.cs`
 
-- [ ] **Step 28.1: Append routes**
+- [x] **Step 28.1: Append routes**
 
 ```csharp
         group.MapGet("/bans", ListBans);
         group.MapDelete("/bans/{userId:guid}", UnbanMember);
 ```
 
-- [ ] **Step 28.2: Append handlers**
+- [x] **Step 28.2: Append handlers**
 
 ```csharp
     private static async Task<IResult> ListBans(
@@ -3000,7 +3000,7 @@ git commit -m "feat(api): POST /api/channels/{id}/members/{userId}/role"
     }
 ```
 
-- [ ] **Step 28.3: Append tests**
+- [x] **Step 28.3: Append tests**
 
 ```csharp
     [Fact]
@@ -3036,7 +3036,7 @@ git commit -m "feat(api): POST /api/channels/{id}/members/{userId}/role"
     }
 ```
 
-- [ ] **Step 28.4: Run + commit**
+- [x] **Step 28.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ModerationFlowTests"
