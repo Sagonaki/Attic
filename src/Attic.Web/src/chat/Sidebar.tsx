@@ -70,6 +70,9 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
         <Link to="/invitations" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
           Invitations
         </Link>
+        <Link to="/settings/sessions" className="flex-1 text-center text-xs px-2 py-1 border rounded hover:bg-slate-50">
+          Sessions
+        </Link>
       </div>
     </aside>
   );

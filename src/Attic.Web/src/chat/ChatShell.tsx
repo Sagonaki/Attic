@@ -12,6 +12,7 @@ import { Contacts } from './Contacts';
 import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
+import { Sessions } from '../auth/Sessions';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
@@ -44,7 +45,8 @@ export function ChatShell() {
           {pathname === '/catalog' && <PublicCatalog />}
           {pathname === '/invitations' && <InvitationsInbox />}
           {pathname === '/contacts' && <Contacts />}
-          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && (
+          {pathname === '/settings/sessions' && <Sessions />}
+          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && pathname !== '/settings/sessions' && (
             <>
               <div className="flex-1 flex flex-col"><ChatWindow /></div>
               {channelId && <RoomDetails channelId={channelId} />}
