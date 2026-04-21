@@ -153,7 +153,7 @@ Four natural checkpoints map onto the review cycle (spec-reviewer + code-quality
 
 The Phase 1 enum declared future codes as YAGNI-flagged placeholders; Phase 2 needs most of them used, and adds a few more. Replace the whole enum.
 
-- [ ] **Step 1.1: Replace `AuthorizationResult.cs` enum contents**
+- [x] **Step 1.1: Replace `AuthorizationResult.cs` enum contents**
 
 ```csharp
 namespace Attic.Domain.Services;
@@ -188,7 +188,7 @@ public readonly record struct AuthorizationResult(bool Allowed, AuthorizationFai
 }
 ```
 
-- [ ] **Step 1.2: Build + test**
+- [x] **Step 1.2: Build + test**
 
 ```bash
 dotnet build src/Attic.Domain
@@ -197,7 +197,7 @@ dotnet test tests/Attic.Domain.Tests
 
 Expected: 0/0, 33 tests still green.
 
-- [ ] **Step 1.3: Commit**
+- [x] **Step 1.3: Commit**
 
 ```bash
 git add src/Attic.Domain/Services/AuthorizationResult.cs

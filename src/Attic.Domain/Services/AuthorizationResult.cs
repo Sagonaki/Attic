@@ -12,6 +12,14 @@ public enum AuthorizationFailureReason
     NotOwner,
     OwnerCannotLeave,
     OwnerCannotBeTargeted,
+    OwnerCannotBeDemoted,
+    AlreadyMember,
+    AlreadyInvited,
+    InvitationNotFound,
+    ChannelNotFound,
+    ChannelDeleted,
+    CannotInviteToPublic,
+    CannotAutoJoinPrivate,
     DuplicateFriendRequest
 }
 
