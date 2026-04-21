@@ -20,6 +20,7 @@ public enum AuthorizationFailureReason
     ChannelDeleted,
     CannotInviteToPublic,
     CannotAutoJoinPrivate,
+    AlreadyFriends,
     DuplicateFriendRequest
 }
 

@@ -563,7 +563,7 @@ git commit -m "feat(domain): add UserBlock entity (asymmetric block edge)"
 **Files:**
 - Modify: `src/Attic.Domain/Services/AuthorizationResult.cs`
 
-- [ ] **Step 5.1: Append `AlreadyFriends` to the enum (before `DuplicateFriendRequest`)**
+- [x] **Step 5.1: Append `AlreadyFriends` to the enum (before `DuplicateFriendRequest`)**
 
 Open `src/Attic.Domain/Services/AuthorizationResult.cs`. Insert `AlreadyFriends,` immediately before `DuplicateFriendRequest` so the enum reads:
 
@@ -593,7 +593,7 @@ public enum AuthorizationFailureReason
 }
 ```
 
-- [ ] **Step 5.2: Build + commit**
+- [x] **Step 5.2: Build + commit**
 
 ```bash
 dotnet build src/Attic.Domain
