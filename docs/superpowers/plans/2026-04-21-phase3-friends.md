@@ -895,7 +895,7 @@ git commit -m "feat(infra): add Friendship EF Core configuration"
 - Create: `src/Attic.Infrastructure/Persistence/Configurations/UserBlockConfiguration.cs`
 - Modify: `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`
 
-- [ ] **Step 10.1: Write `UserBlockConfiguration.cs`**
+- [x] **Step 10.1: Write `UserBlockConfiguration.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -917,13 +917,13 @@ public sealed class UserBlockConfiguration : IEntityTypeConfiguration<UserBlock>
 }
 ```
 
-- [ ] **Step 10.2: Add `DbSet<UserBlock>` to `AtticDbContext.cs`**
+- [x] **Step 10.2: Add `DbSet<UserBlock>` to `AtticDbContext.cs`**
 
 ```csharp
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
 ```
 
-- [ ] **Step 10.3: Build + commit**
+- [x] **Step 10.3: Build + commit**
 
 ```bash
 dotnet build src/Attic.Infrastructure
