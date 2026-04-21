@@ -241,7 +241,7 @@ git commit -m "feat(domain): add InvitationStatus enum"
 - Create: `src/Attic.Domain/Entities/ChannelInvitation.cs`
 - Create: `tests/Attic.Domain.Tests/ChannelInvitationTests.cs`
 
-- [ ] **Step 3.1: Write the failing tests — `tests/Attic.Domain.Tests/ChannelInvitationTests.cs`**
+- [x] **Step 3.1: Write the failing tests — `tests/Attic.Domain.Tests/ChannelInvitationTests.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -328,7 +328,7 @@ public class ChannelInvitationTests
 }
 ```
 
-- [ ] **Step 3.2: Run, verify compile failure**
+- [x] **Step 3.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "ChannelInvitationTests"
@@ -336,7 +336,7 @@ dotnet test tests/Attic.Domain.Tests --filter "ChannelInvitationTests"
 
 Expected: compile failure — `ChannelInvitation` does not exist.
 
-- [ ] **Step 3.3: Implement `src/Attic.Domain/Entities/ChannelInvitation.cs`**
+- [x] **Step 3.3: Implement `src/Attic.Domain/Entities/ChannelInvitation.cs`**
 
 ```csharp
 using Attic.Domain.Enums;
@@ -386,7 +386,7 @@ public sealed class ChannelInvitation
 }
 ```
 
-- [ ] **Step 3.4: Run, verify pass**
+- [x] **Step 3.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "ChannelInvitationTests"
@@ -394,7 +394,7 @@ dotnet test tests/Attic.Domain.Tests --filter "ChannelInvitationTests"
 
 Expected: 7 passing.
 
-- [ ] **Step 3.5: Commit**
+- [x] **Step 3.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Entities/ChannelInvitation.cs tests/Attic.Domain.Tests/ChannelInvitationTests.cs
