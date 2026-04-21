@@ -190,4 +190,52 @@ public class AuthorizationRulesTests
         var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
         AuthorizationRules.CanUnbanFromChannel(actor).Allowed.ShouldBeTrue();
     }
+
+    [Fact]
+    public void CanChangeRole_admin_can_promote_member_to_admin()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Admin).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanChangeRole_admin_can_demote_other_admin_to_member()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Admin, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Member).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanChangeRole_cannot_demote_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Member).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeDemoted);
+    }
+
+    [Fact]
+    public void CanChangeRole_cannot_promote_to_owner()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Owner, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Owner).Reason
+            .ShouldBe(AuthorizationFailureReason.OwnerCannotBeTargeted);
+    }
+
+    [Fact]
+    public void CanChangeRole_denies_non_admin_actor()
+    {
+        var channelId = Guid.NewGuid();
+        var actor = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        var target = ChannelMember.Join(channelId, Guid.NewGuid(), ChannelRole.Member, T0_J);
+        AuthorizationRules.CanChangeRole(actor, target, ChannelRole.Admin).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAdmin);
+    }
 }

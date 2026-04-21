@@ -830,7 +830,7 @@ git commit -m "feat(domain): add CanBanFromChannel and CanUnbanFromChannel rules
 - Modify: `src/Attic.Domain/Services/AuthorizationRules.cs`
 - Modify: `tests/Attic.Domain.Tests/AuthorizationRulesTests.cs`
 
-- [ ] **Step 8.1: Append tests**
+- [x] **Step 8.1: Append tests**
 
 ```csharp
     [Fact]
@@ -882,13 +882,13 @@ git commit -m "feat(domain): add CanBanFromChannel and CanUnbanFromChannel rules
     }
 ```
 
-- [ ] **Step 8.2: Run, verify fail**
+- [x] **Step 8.2: Run, verify fail**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanChangeRole"
 ```
 
-- [ ] **Step 8.3: Append method to `AuthorizationRules.cs`**
+- [x] **Step 8.3: Append method to `AuthorizationRules.cs`**
 
 ```csharp
     public static AuthorizationResult CanChangeRole(ChannelMember? actor, ChannelMember? target, Enums.ChannelRole newRole)
@@ -902,7 +902,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanChangeRole"
     }
 ```
 
-- [ ] **Step 8.4: Run, verify pass; commit**
+- [x] **Step 8.4: Run, verify pass; commit**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
