@@ -65,7 +65,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_messages", x => x.id);
-                    table.CheckConstraint("ck_messages_content_length", "octet_length(\"Content\") <= 3072");
+                    table.CheckConstraint("ck_messages_content_length", "octet_length(content) <= 3072");
                 });
 
             migrationBuilder.CreateTable(
@@ -115,7 +115,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
                 table: "channels",
                 column: "name",
                 unique: true,
-                filter: "\"Kind\" <> 2 AND \"DeletedAt\" IS NULL")
+                filter: "kind <> 2 AND deleted_at IS NULL")
                 .Annotation("Npgsql:IndexInclude", new[] { "description", "kind" });
 
             migrationBuilder.CreateIndex(
@@ -134,7 +134,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
                 name: "ix_sessions_active",
                 table: "sessions",
                 column: "user_id",
-                filter: "\"RevokedAt\" IS NULL");
+                filter: "revoked_at IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_email",

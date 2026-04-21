@@ -12,7 +12,7 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.HasKey(m => m.Id);
         b.Property(m => m.Id).UseIdentityAlwaysColumn();
         b.Property(m => m.Content).IsRequired();
-        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(\"Content\") <= 3072"));
+        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(content) <= 3072"));
         b.HasQueryFilter(m => m.DeletedAt == null);
 
         b.HasIndex(m => new { m.ChannelId, m.Id })

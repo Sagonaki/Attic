@@ -15,6 +15,6 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         b.Property(s => s.Ip).HasMaxLength(64);
         b.HasIndex(s => new { s.UserId })
             .HasDatabaseName("ix_sessions_active")
-            .HasFilter("\"RevokedAt\" IS NULL");
+            .HasFilter("revoked_at IS NULL");
     }
 }

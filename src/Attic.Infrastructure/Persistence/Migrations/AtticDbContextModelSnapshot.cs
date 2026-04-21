@@ -65,7 +65,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ux_channels_name_not_personal")
-                        .HasFilter("\"Kind\" <> 2 AND \"DeletedAt\" IS NULL");
+                        .HasFilter("kind <> 2 AND deleted_at IS NULL");
 
                     NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("Name"), new[] { "Description", "Kind" });
 
@@ -167,7 +167,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
 
                     b.ToTable("messages", null, t =>
                         {
-                            t.HasCheckConstraint("ck_messages_content_length", "octet_length(\"Content\") <= 3072");
+                            t.HasCheckConstraint("ck_messages_content_length", "octet_length(content) <= 3072");
                         });
                 });
 
@@ -225,7 +225,7 @@ namespace Attic.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_sessions_active")
-                        .HasFilter("\"RevokedAt\" IS NULL");
+                        .HasFilter("revoked_at IS NULL");
 
                     b.ToTable("sessions", (string)null);
                 });

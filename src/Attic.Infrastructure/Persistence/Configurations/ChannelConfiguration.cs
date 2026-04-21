@@ -19,7 +19,7 @@ public sealed class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         b.HasIndex(c => c.Name)
             .IsUnique()
             .HasDatabaseName("ux_channels_name_not_personal")
-            .HasFilter($"\"Kind\" <> {(int)ChannelKind.Personal} AND \"DeletedAt\" IS NULL")
+            .HasFilter($"kind <> {(int)ChannelKind.Personal} AND deleted_at IS NULL")
             .IncludeProperties(c => new { c.Description, c.Kind });
     }
 }

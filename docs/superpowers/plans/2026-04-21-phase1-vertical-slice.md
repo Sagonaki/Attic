@@ -1886,7 +1886,7 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         b.Property(s => s.Ip).HasMaxLength(64);
         b.HasIndex(s => new { s.UserId })
             .HasDatabaseName("ix_sessions_active")
-            .HasFilter("\"RevokedAt\" IS NULL");
+            .HasFilter("revoked_at IS NULL");   // snake_case: UseSnakeCaseNamingConvention does not rewrite raw SQL
     }
 }
 ```
@@ -1915,7 +1915,7 @@ public sealed class ChannelConfiguration : IEntityTypeConfiguration<Channel>
         b.HasIndex(c => c.Name)
             .IsUnique()
             .HasDatabaseName("ux_channels_name_not_personal")
-            .HasFilter($"\"Kind\" <> {(int)ChannelKind.Personal} AND \"DeletedAt\" IS NULL")
+            .HasFilter($"kind <> {(int)ChannelKind.Personal} AND deleted_at IS NULL")   // snake_case: raw SQL is not rewritten by UseSnakeCaseNamingConvention
             .IncludeProperties(c => new { c.Description, c.Kind });
     }
 }
@@ -1961,7 +1961,7 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.HasKey(m => m.Id);
         b.Property(m => m.Id).UseIdentityAlwaysColumn();
         b.Property(m => m.Content).IsRequired();
-        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(\"Content\") <= 3072"));
+        b.ToTable(t => t.HasCheckConstraint("ck_messages_content_length", "octet_length(content) <= 3072"));   // snake_case: raw SQL is not rewritten by UseSnakeCaseNamingConvention
         b.HasQueryFilter(m => m.DeletedAt == null);
 
         b.HasIndex(m => new { m.ChannelId, m.Id })
