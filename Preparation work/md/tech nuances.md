@@ -1,6 +1,7 @@
 6\. Implementation Nuances
 ==========================
 Tech stack .net 10.
+front-end draft is implemented on React, read "FE prototype/FE prototype description.md" file for more details. You can reuse it.
 
 6.1 Database (PostgreSQL + EF Core)
 -----------------------------------
