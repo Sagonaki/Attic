@@ -38,6 +38,8 @@ builder.Services.AddSignalR(o =>
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
 // GlobalHubFilter is stateless (only ILogger) — singleton is correct.
 builder.Services.AddSingleton<Attic.Api.Hubs.GlobalHubFilter>();
+// HubRateLimiter holds in-memory per-user queues — must be singleton.
+builder.Services.AddSingleton<Attic.Api.RateLimiting.HubRateLimiter>();
 builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();

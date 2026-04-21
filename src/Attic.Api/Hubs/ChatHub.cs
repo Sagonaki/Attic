@@ -1,4 +1,5 @@
 using Attic.Api.Auth;
+using Attic.Api.RateLimiting;
 using Attic.Contracts.Attachments;
 using Attic.Contracts.Messages;
 using Attic.Domain.Abstractions;
@@ -20,7 +21,8 @@ public sealed class ChatHub(
     IValidator<SendMessageRequest> sendMessageValidator,
     IValidator<EditMessageRequest> editValidator,
     Attic.Infrastructure.Presence.IPresenceStore presenceStore,
-    AuditLogContext audit) : Hub
+    AuditLogContext audit,
+    HubRateLimiter rateLimiter) : Hub
 {
     public const string Path = "/hub";
 
@@ -58,6 +60,9 @@ public sealed class ChatHub(
     {
         var userId = UserId;
         if (userId is null) return new SendMessageResponse(false, null, null, "unauthorized");
+
+        if (!rateLimiter.TryAcquire(userId.Value, clock.UtcNow))
+            return new SendMessageResponse(false, null, null, "rate_limited");
 
         var validation = await sendMessageValidator.ValidateAsync(request);
         if (!validation.IsValid)
