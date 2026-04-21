@@ -14,6 +14,7 @@ public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options) : D
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
+    public DbSet<Attachment> Attachments => Set<Attachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
