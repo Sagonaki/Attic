@@ -1,62 +1,33 @@
-export type AuthMode = 'signin' | 'register' | 'forgot-password';
-export type View = 'chat' | 'contacts' | 'sessions' | 'profile';
-export type ChatCategory = 'public' | 'private' | 'personal';
-
-export interface Room {
+export interface MeResponse {
   id: string;
-  name: string;
-  type: 'public' | 'private';
-  unreadCount?: number;
-  memberCount?: number;
-  createdAt?: string;
+  email: string;
+  username: string;
 }
 
-export interface Contact {
-  id: string;
-  name: string;
-  status: 'online' | 'offline' | 'afk';
-  unreadCount?: number;
-}
-
-export interface Message {
-  id: string;
-  sender: string;
-  time: string;
+export interface MessageDto {
+  id: number;
+  channelId: string;
+  senderId: string;
+  senderUsername: string;
   content: string;
-  type: 'text' | 'file' | 'reply';
-  fileName?: string;
-  fileComment?: string;
-  replyToId?: string;
-  replyToContent?: string;
-  replyToSender?: string;
-  isEdited?: boolean;
+  replyToId: number | null;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
-export interface Session {
-  id: string;
-  device: string;
-  browser: string;
-  ip: string;
-  location: string;
-  lastActive: string;
-  isCurrent?: boolean;
+export interface PagedResult<T> {
+  items: T[];
+  nextCursor: string | null;
 }
 
-export interface FriendRequest {
-  id: string;
-  username: string;
-  content?: string;
-  status: 'pending' | 'accepted' | 'declined';
+export interface ApiError {
+  code: string;
+  message: string;
 }
 
-export interface BannedUser {
-  name: string;
-  by: string;
-  date: string;
-}
-
-export interface SentInvitation {
-  username: string;
-  status: string;
-  date: string;
+export interface SendMessageResponse {
+  ok: boolean;
+  serverId: number | null;
+  createdAt: string | null;
+  error: string | null;
 }
