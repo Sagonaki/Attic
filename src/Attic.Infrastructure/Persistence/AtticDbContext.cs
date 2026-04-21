@@ -12,6 +12,7 @@ public sealed class AtticDbContext(DbContextOptions<AtticDbContext> options) : D
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<ChannelInvitation> ChannelInvitations => Set<ChannelInvitation>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

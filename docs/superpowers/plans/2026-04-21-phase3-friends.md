@@ -843,7 +843,7 @@ Expected: 0/0.
 - Create: `src/Attic.Infrastructure/Persistence/Configurations/FriendshipConfiguration.cs`
 - Modify: `src/Attic.Infrastructure/Persistence/AtticDbContext.cs`
 
-- [ ] **Step 9.1: Write `FriendshipConfiguration.cs`**
+- [x] **Step 9.1: Write `FriendshipConfiguration.cs`**
 
 ```csharp
 using Attic.Domain.Entities;
@@ -871,13 +871,13 @@ public sealed class FriendshipConfiguration : IEntityTypeConfiguration<Friendshi
 }
 ```
 
-- [ ] **Step 9.2: Add `DbSet<Friendship>` to `AtticDbContext.cs`**
+- [x] **Step 9.2: Add `DbSet<Friendship>` to `AtticDbContext.cs`**
 
 ```csharp
     public DbSet<Friendship> Friendships => Set<Friendship>();
 ```
 
-- [ ] **Step 9.3: Build + commit**
+- [x] **Step 9.3: Build + commit**
 
 ```bash
 dotnet build src/Attic.Infrastructure
