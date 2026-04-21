@@ -99,4 +99,15 @@ public static class AuthorizationRules
         if (hasPendingInvitation) return AuthorizationResult.Deny(AuthorizationFailureReason.AlreadyInvited);
         return AuthorizationResult.Ok();
     }
+
+    public static AuthorizationResult CanSendFriendRequest(
+        bool existingFriendship,
+        bool hasPendingRequest,
+        bool hasBlockInEitherDirection)
+    {
+        if (hasBlockInEitherDirection) return AuthorizationResult.Deny(AuthorizationFailureReason.BlockedByOrBlockingUser);
+        if (existingFriendship) return AuthorizationResult.Deny(AuthorizationFailureReason.AlreadyFriends);
+        if (hasPendingRequest) return AuthorizationResult.Deny(AuthorizationFailureReason.DuplicateFriendRequest);
+        return AuthorizationResult.Ok();
+    }
 }

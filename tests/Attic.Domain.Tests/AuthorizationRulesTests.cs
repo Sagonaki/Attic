@@ -324,4 +324,43 @@ public class AuthorizationRulesTests
         AuthorizationRules.CanInviteToChannel(channel, inviter, null, hasPendingInvitation: true).Reason
             .ShouldBe(AuthorizationFailureReason.AlreadyInvited);
     }
+
+    [Fact]
+    public void CanSendFriendRequest_allows_when_no_relationship()
+    {
+        AuthorizationRules.CanSendFriendRequest(
+            existingFriendship: false,
+            hasPendingRequest: false,
+            hasBlockInEitherDirection: false).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanSendFriendRequest_denies_already_friends()
+    {
+        AuthorizationRules.CanSendFriendRequest(
+            existingFriendship: true,
+            hasPendingRequest: false,
+            hasBlockInEitherDirection: false).Reason
+            .ShouldBe(AuthorizationFailureReason.AlreadyFriends);
+    }
+
+    [Fact]
+    public void CanSendFriendRequest_denies_duplicate_pending()
+    {
+        AuthorizationRules.CanSendFriendRequest(
+            existingFriendship: false,
+            hasPendingRequest: true,
+            hasBlockInEitherDirection: false).Reason
+            .ShouldBe(AuthorizationFailureReason.DuplicateFriendRequest);
+    }
+
+    [Fact]
+    public void CanSendFriendRequest_denies_when_blocked_in_either_direction()
+    {
+        AuthorizationRules.CanSendFriendRequest(
+            existingFriendship: false,
+            hasPendingRequest: false,
+            hasBlockInEitherDirection: true).Reason
+            .ShouldBe(AuthorizationFailureReason.BlockedByOrBlockingUser);
+    }
 }

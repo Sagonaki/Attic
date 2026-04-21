@@ -614,7 +614,7 @@ Expected: 0/0.
 
 The rule takes the minimal state: is there already a friendship? is there a pending request in either direction? is there a block in either direction?
 
-- [ ] **Step 6.1: Append the failing tests**
+- [x] **Step 6.1: Append the failing tests**
 
 After the existing `CanInviteToChannel_*` tests in `AuthorizationRulesTests.cs`, append:
 
@@ -659,13 +659,13 @@ After the existing `CanInviteToChannel_*` tests in `AuthorizationRulesTests.cs`,
     }
 ```
 
-- [ ] **Step 6.2: Run, verify compile failure**
+- [x] **Step 6.2: Run, verify compile failure**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests --filter "CanSendFriendRequest"
 ```
 
-- [ ] **Step 6.3: Append the method to `AuthorizationRules.cs`** (after the last method, before the closing `}`)
+- [x] **Step 6.3: Append the method to `AuthorizationRules.cs`** (after the last method, before the closing `}`)
 
 ```csharp
     public static AuthorizationResult CanSendFriendRequest(
@@ -680,7 +680,7 @@ dotnet test tests/Attic.Domain.Tests --filter "CanSendFriendRequest"
     }
 ```
 
-- [ ] **Step 6.4: Run, verify pass**
+- [x] **Step 6.4: Run, verify pass**
 
 ```bash
 dotnet test tests/Attic.Domain.Tests
@@ -688,7 +688,7 @@ dotnet test tests/Attic.Domain.Tests
 
 Expected: previous tests + 4 new = ~92 passing (depending on prior counts).
 
-- [ ] **Step 6.5: Commit**
+- [x] **Step 6.5: Commit**
 
 ```bash
 git add src/Attic.Domain/Services/AuthorizationRules.cs \
