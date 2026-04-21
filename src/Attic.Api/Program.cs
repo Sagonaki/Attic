@@ -61,6 +61,7 @@ app.MapOpenApi();
 app.MapAuthEndpoints();
 app.MapMessagesEndpoints();
 app.MapChannelsEndpoints();
+app.MapChannelMembersEndpoints();
 app.MapHub<Attic.Api.Hubs.ChatHub>(Attic.Api.Hubs.ChatHub.Path).RequireAuthorization();
 
 // Apply migrations + seed on startup (Phase 1; production uses a separate migration job later).

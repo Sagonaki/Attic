@@ -2594,7 +2594,7 @@ git commit -m "feat(api): POST /api/channels/{id}/leave"
 
 This task scaffolds the members endpoint group and adds `GET /api/channels/{id}/members`. Subsequent tasks 26-28 append sibling routes.
 
-- [ ] **Step 25.1: Write `ChannelMembersEndpoints.cs`**
+- [x] **Step 25.1: Write `ChannelMembersEndpoints.cs`**
 
 ```csharp
 using Attic.Api.Auth;
@@ -2656,7 +2656,7 @@ public static class ChannelMembersEndpoints
 }
 ```
 
-- [ ] **Step 25.2: Map the group in `Program.cs`**
+- [x] **Step 25.2: Map the group in `Program.cs`**
 
 Add after `app.MapChannelsEndpoints();`:
 
@@ -2664,7 +2664,7 @@ Add after `app.MapChannelsEndpoints();`:
 app.MapChannelMembersEndpoints();
 ```
 
-- [ ] **Step 25.3: Append tests to `MembershipFlowTests.cs`**
+- [x] **Step 25.3: Append tests to `MembershipFlowTests.cs`**
 
 ```csharp
     [Fact]
@@ -2688,7 +2688,7 @@ app.MapChannelMembersEndpoints();
     }
 ```
 
-- [ ] **Step 25.4: Run + commit**
+- [x] **Step 25.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "MembershipFlowTests"

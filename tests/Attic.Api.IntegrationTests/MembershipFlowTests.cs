@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Attic.Contracts.Auth;
 using Attic.Contracts.Channels;
 using Attic.Contracts.Common;
 using Shouldly;
@@ -85,5 +84,25 @@ public sealed class MembershipFlowTests(AppHostFixture fx)
         leave.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var err = await leave.Content.ReadFromJsonAsync<ApiError>(ct);
         err!.Code.ShouldBe("OwnerCannotLeave");
+    }
+
+    [Fact]
+    public async Task GET_members_lists_roles()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (owner, ownerUsername, _) = await Register(ct);
+        var create = await owner.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest($"lm-{Guid.NewGuid():N}"[..20], null, "public"), ct);
+        var channel = (await create.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var (joiner, joinerUsername, _) = await Register(ct);
+        (await joiner.PostAsync($"/api/channels/{channel.Id:D}/join", null, ct)).EnsureSuccessStatusCode();
+
+        var members = await owner.GetAsync($"/api/channels/{channel.Id:D}/members", ct);
+        members.EnsureSuccessStatusCode();
+        var body = await members.Content.ReadFromJsonAsync<List<ChannelMemberSummary>>(ct);
+        body.ShouldNotBeNull();
+        body!.ShouldContain(m => m.Username == ownerUsername && m.Role == "owner");
+        body.ShouldContain(m => m.Username == joinerUsername && m.Role == "member");
     }
 }
