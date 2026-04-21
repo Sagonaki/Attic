@@ -2309,13 +2309,13 @@ git commit -m "feat(api): PATCH /api/channels/{id} for name/description updates 
 - Modify: `src/Attic.Api/Endpoints/ChannelsEndpoints.cs`
 - Modify: `tests/Attic.Api.IntegrationTests/ChannelCrudFlowTests.cs`
 
-- [ ] **Step 22.1: Append route**
+- [x] **Step 22.1: Append route**
 
 ```csharp
         group.MapDelete("/{id:guid}", DeleteChannel);
 ```
 
-- [ ] **Step 22.2: Append handler**
+- [x] **Step 22.2: Append handler**
 
 ```csharp
     private static async Task<IResult> DeleteChannel(
@@ -2340,7 +2340,7 @@ git commit -m "feat(api): PATCH /api/channels/{id} for name/description updates 
     }
 ```
 
-- [ ] **Step 22.3: Append tests**
+- [x] **Step 22.3: Append tests**
 
 ```csharp
     [Fact]
@@ -2376,7 +2376,7 @@ git commit -m "feat(api): PATCH /api/channels/{id} for name/description updates 
     }
 ```
 
-- [ ] **Step 22.4: Run + commit**
+- [x] **Step 22.4: Run + commit**
 
 ```bash
 dotnet test tests/Attic.Api.IntegrationTests --filter "ChannelCrudFlowTests"

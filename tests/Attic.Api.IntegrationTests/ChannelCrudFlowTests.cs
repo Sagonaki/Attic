@@ -185,6 +185,38 @@ public sealed class ChannelCrudFlowTests(AppHostFixture fx)
         patch.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
+    [Fact]
+    public async Task DELETE_channel_soft_deletes_and_hides_it()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (client, _) = await RegisterFresh(ct);
+        var name = $"del-{Guid.NewGuid():N}"[..20];
+        var create = await client.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest(name, null, "public"), ct);
+        var channel = (await create.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var del = await client.DeleteAsync($"/api/channels/{channel.Id:D}", ct);
+        del.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        var get = await client.GetAsync($"/api/channels/{channel.Id:D}", ct);
+        get.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DELETE_channel_forbidden_to_non_owner()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (owner, _) = await RegisterFresh(ct);
+        var name = $"delFb-{Guid.NewGuid():N}"[..20];
+        var create = await owner.PostAsJsonAsync("/api/channels",
+            new CreateChannelRequest(name, null, "public"), ct);
+        var channel = (await create.Content.ReadFromJsonAsync<ChannelDetails>(ct))!;
+
+        var (outsider, _) = await RegisterFresh(ct);
+        var del = await outsider.DeleteAsync($"/api/channels/{channel.Id:D}", ct);
+        del.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
     internal async Task<(HttpClient Client, string Username)> RegisterFresh(CancellationToken ct)
     {
         var (client, username, _) = await TestHelpers.RegisterFresh(fx, ct);

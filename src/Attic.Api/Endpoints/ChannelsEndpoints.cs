@@ -24,6 +24,7 @@ public static class ChannelsEndpoints
         group.MapGet("/mine", GetMyChannels);
         group.MapGet("/{id:guid}", GetChannelDetails);
         group.MapPatch("/{id:guid}", UpdateChannel);
+        group.MapDelete("/{id:guid}", DeleteChannel);
 
         return routes;
     }
@@ -224,5 +225,26 @@ public static class ChannelsEndpoints
             channel.OwnerId,
             channel.CreatedAt,
             memberCount));
+    }
+
+    private static async Task<IResult> DeleteChannel(
+        Guid id,
+        AtticDbContext db,
+        IClock clock,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var channel = await db.Channels.AsTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (channel is null) return Results.NotFound();
+
+        var auth = Attic.Domain.Services.AuthorizationRules.CanDeleteChannel(channel, currentUser.UserIdOrThrow);
+        if (!auth.Allowed) return Results.Forbid();
+
+        channel.SoftDelete(clock.UtcNow);
+        await db.SaveChangesAsync(ct);
+
+        return Results.NoContent();
     }
 }
