@@ -18,6 +18,7 @@ export function useSendMessage(channelId: string, currentUser: { id: string; use
       replyToId: null,
       createdAt: new Date().toISOString(),
       updatedAt: null,
+      attachments: null,
     };
 
     qc.setQueryData<{ pages: PagedResult<MessageDto>[]; pageParams: unknown[] }>(queryKey, prev => {

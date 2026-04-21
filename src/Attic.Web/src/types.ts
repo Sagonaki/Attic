@@ -4,6 +4,32 @@ export interface MeResponse {
   username: string;
 }
 
+export interface AttachmentDto {
+  id: string;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+  comment: string | null;
+}
+
+export interface UploadAttachmentResponse {
+  id: string;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+export interface EditMessageRequest {
+  messageId: number;
+  content: string;
+}
+
+export interface EditMessageResponse {
+  ok: boolean;
+  updatedAt: string | null;
+  error: string | null;
+}
+
 export interface MessageDto {
   id: number;
   channelId: string;
@@ -13,6 +39,7 @@ export interface MessageDto {
   replyToId: number | null;
   createdAt: string;
   updatedAt: string | null;
+  attachments: AttachmentDto[] | null;
 }
 
 export interface PagedResult<T> {
@@ -140,4 +167,12 @@ export interface UserSearchResult {
 
 export interface OpenPersonalChatRequest {
   username: string;
+}
+
+export interface SendMessageRequest {
+  channelId: string;
+  clientMessageId: string;
+  content: string;
+  replyToId: number | null;
+  attachmentIds: string[] | null;
 }
