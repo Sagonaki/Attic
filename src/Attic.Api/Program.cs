@@ -37,6 +37,7 @@ builder.Services.AddSignalR(o =>
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
 builder.Services.AddScoped<Attic.Api.Hubs.ChannelEventBroadcaster>();
 builder.Services.AddScoped<Attic.Api.Hubs.FriendsEventBroadcaster>();
+builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();
 
 builder.Services.Configure<Attic.Infrastructure.Storage.AttachmentStorageOptions>(
     builder.Configuration.GetSection("Attachments"));
