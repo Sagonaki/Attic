@@ -397,4 +397,30 @@ public class AuthorizationRulesTests
         AuthorizationRules.CanOpenPersonalChat(false, false).Reason.ShouldBe(AuthorizationFailureReason.NotFriends);
         AuthorizationRules.CanOpenPersonalChat(true, true).Reason.ShouldBe(AuthorizationFailureReason.BlockedByOrBlockingUser);
     }
+
+    [Fact]
+    public void CanEditMessage_allows_author_of_live_message()
+    {
+        var authorId = Guid.NewGuid();
+        var message = Message.Post(Guid.NewGuid(), authorId, "hi", null, T0_J);
+        AuthorizationRules.CanEditMessage(message, actorUserId: authorId).Allowed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void CanEditMessage_denies_non_author()
+    {
+        var message = Message.Post(Guid.NewGuid(), Guid.NewGuid(), "hi", null, T0_J);
+        AuthorizationRules.CanEditMessage(message, actorUserId: Guid.NewGuid()).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
+
+    [Fact]
+    public void CanEditMessage_denies_deleted_message()
+    {
+        var authorId = Guid.NewGuid();
+        var message = Message.Post(Guid.NewGuid(), authorId, "hi", null, T0_J);
+        message.SoftDelete(T0_J.AddMinutes(1));
+        AuthorizationRules.CanEditMessage(message, actorUserId: authorId).Reason
+            .ShouldBe(AuthorizationFailureReason.NotAuthor);
+    }
 }

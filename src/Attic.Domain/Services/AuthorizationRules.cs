@@ -120,4 +120,11 @@ public static class AuthorizationRules
 
     public static AuthorizationResult CanOpenPersonalChat(bool areFriends, bool hasBlockInEitherDirection)
         => CanPostInPersonalChat(areFriends, hasBlockInEitherDirection);
+
+    public static AuthorizationResult CanEditMessage(Message message, Guid actorUserId)
+    {
+        if (message.SenderId != actorUserId) return AuthorizationResult.Deny(AuthorizationFailureReason.NotAuthor);
+        if (message.DeletedAt is not null) return AuthorizationResult.Deny(AuthorizationFailureReason.NotAuthor);
+        return AuthorizationResult.Ok();
+    }
 }
