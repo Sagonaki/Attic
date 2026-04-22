@@ -32,3 +32,15 @@ export async function login(page: Page, email: string, password: string): Promis
   await page.getByRole('button', { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/$|\/chat\//);
 }
+
+/** Opens the header profile dropdown (avatar + username button). */
+export async function openProfileMenu(page: Page, username: string): Promise<void> {
+  await page.getByRole('button', { name: new RegExp(username) }).click();
+}
+
+/** Signs out via the profile dropdown. Returns once /login is visible. */
+export async function logout(page: Page, username: string): Promise<void> {
+  await openProfileMenu(page, username);
+  await page.getByRole('menuitem', { name: /sign out/i }).click();
+  await expect(page).toHaveURL(/\/login$/, { timeout: 10_000 });
+}

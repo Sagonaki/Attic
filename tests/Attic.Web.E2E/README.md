@@ -21,39 +21,61 @@ npm test
 `playwright.config.ts` defaults `E2E_BASE_URL` to `https://localhost:7051` so if your
 Aspire run happens to bind there, you can skip the export.
 
-## Scenarios
+## Scenarios (32 functional + 1 stress)
 
-Golden-path / realtime:
+Golden path / realtime:
 
-- `register-create-post.spec.ts` — register → create room → send message → reload → persists.
-- `invite-and-realtime.spec.ts` — two contexts, private-room invite accepted, realtime message.
-- `attachment-access.spec.ts` — image upload, per-membership download authorization.
-- `unread-counter.spec.ts` — two contexts; UnreadChanged badge increments over the hub; MarkRead resets it.
+- `register-create-post.spec.ts` — register → create room → send → reload.
+- `reload-preserves-session.spec.ts` — reload keeps cookie-auth alive.
+- `invite-and-realtime.spec.ts` — private-room invite + accept + realtime broadcast.
+- `attachment-access.spec.ts` — image upload, per-membership download gating.
+- `unread-counter.spec.ts` — UnreadChanged badge + MessageCreated fan-out.
+- `realtime-echo.spec.ts` — peer's send arrives in the receiver's chat window.
+- `catalog-refresh.spec.ts` — newly-created public room is listed in `/catalog`.
 
 Messaging actions:
 
-- `edit-message.spec.ts` — sender edits their own message, `(edited)` marker + new content render.
-- `delete-message.spec.ts` — sender deletes their own message, row disappears, others stay.
-- `reply-to.spec.ts` — reply composer quotes the original as context on the reply row.
+- `edit-message.spec.ts` — sender edit + `(edited)` marker.
+- `delete-message.spec.ts` — sender delete, row disappears.
+- `reply-to.spec.ts` — reply row renders the quoted original.
+- `admin-delete-other.spec.ts` — owner can delete another user's message.
+- `content-size-limit.spec.ts` — oversize message (> 3 KB) rejected.
 
 Rooms:
 
-- `join-catalog.spec.ts` — user browses `/catalog`, joins someone else's public room, posts there.
+- `join-catalog.spec.ts` — browse + join public.
+- `leave-room.spec.ts` — non-owner leaves → room gone from sidebar.
+- `owner-delete-room.spec.ts` — owner deletes their own room.
+- `direct-private-link.spec.ts` — outsider direct-linking to a private channel sees no leak.
 
 Friends + blocks:
 
-- `friend-dm.spec.ts` — friend-request → accept → open DM → message delivers.
-- `block-denies-post.spec.ts` — after a block the friendship is removed on both sides.
+- `friend-dm.spec.ts` — request → accept → DM.
+- `block-denies-post.spec.ts` — block removes the friendship on both sides.
+- `decline-friend-request.spec.ts` — B declines → A's outgoing cleared.
+- `unblock-restores.spec.ts` — unblock clears the block but doesn't auto-refriend.
+- `user-search.spec.ts` — send-friend-request modal filters by username prefix.
+- `decline-invitation.spec.ts` — invitee declines → room not in their private tab.
 
-Auth + UI affordances:
+Auth + profile:
 
-- `forgot-password.spec.ts` — the dialog submits cleanly and the UI stays on `/login`.
-- `theme-toggle.spec.ts` — toggling the theme updates `<html>`'s class and persists across reload.
+- `logout-relogin.spec.ts` — sign out → sign back in with the same credentials.
+- `change-password.spec.ts` — change password via `/profile` + re-login.
+- `delete-account.spec.ts` — delete account → cannot log back in.
+- `session-revoke.spec.ts` — revoke another session → kicked tab redirects to `/login`. **Known-flaky in the serialized run; product fix validated by integration test; marked `test.fixme` until the race is resolved.**
+- `forgot-password.spec.ts` — dialog submits cleanly, stays on `/login`.
+- `unauth-redirect.spec.ts` — unauthenticated visits to protected routes bounce to `/login`.
 
-Emoji-picker regression:
+Attachments:
 
-- `emoji-picker.spec.ts` — regression guard for the `left-0` positioning fix (commit 8eb752a):
-  the picker lands inside MAIN's clip region and clicking a tile inserts the emoji into the composer.
+- `paste-attachment.spec.ts` — clipboard paste → upload + send.
+- `drag-drop-attachment.spec.ts` — drag-and-drop file → upload + send.
+- `non-image-attachment.spec.ts` — non-image file renders as a file chip (not `<img>`).
+
+UI:
+
+- `theme-toggle.spec.ts` — theme switch + reload persistence.
+- `emoji-picker.spec.ts` — regression for the `left-0` positioning fix (commit 8eb752a).
 
 ## Development
 

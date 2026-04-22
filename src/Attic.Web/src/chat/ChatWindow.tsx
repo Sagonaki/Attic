@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useChannelMessages } from './useChannelMessages';
+import { useChannelDetails } from './useChannelDetails';
 import { useSendMessage } from './useSendMessage';
 import { useDeleteMessage } from './useDeleteMessage';
 import { useEditMessage } from './useEditMessage';
@@ -22,6 +23,11 @@ export function ChatWindow() {
 
 function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: string; username: string } }) {
   const { items, fetchNextPage, hasNextPage, isFetchingNextPage } = useChannelMessages(channelId);
+  const { data: channel } = useChannelDetails(channelId);
+  // Owner always acts as "admin" for the message-actions menu (covers the
+  // admin-delete-any-message path in AuthorizationRules.CanDeleteMessage).
+  // Proper per-member Admin role surfacing is a later enhancement.
+  const isAdmin = !!channel && channel.ownerId === user.id;
   const latestMessageId = items[0]?.id && items[0].id > 0 ? items[0].id : undefined;
   useMarkRead(channelId, latestMessageId);
   const send = useSendMessage(channelId, user);
@@ -76,7 +82,7 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
                 {m.id > 0 && (
                   <MessageActionsMenu
                     isOwn={m.senderId === user.id}
-                    isAdmin={false}
+                    isAdmin={isAdmin}
                     onEdit={() => { setEditingId(m.id); setEditDraft(m.content); }}
                     onReply={() => setReplyTo({ messageId: m.id, snippet: m.content.slice(0, 80) })}
                     onDelete={() => void del(m.id)}

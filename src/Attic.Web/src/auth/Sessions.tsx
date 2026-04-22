@@ -1,10 +1,6 @@
-import { useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { Laptop, Smartphone, Monitor } from 'lucide-react';
 import { sessionsApi } from '../api/sessions';
-import { getOrCreateHubClient, disposeHubClient } from '../api/signalr';
-import { useAuth } from './useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,22 +14,13 @@ function deviceIcon(userAgent: string) {
 
 export function Sessions() {
   const qc = useQueryClient();
-  const { setUser } = useAuth();
-  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['sessions'] as const,
     queryFn: () => sessionsApi.listMine(),
   });
 
-  useEffect(() => {
-    const hub = getOrCreateHubClient();
-    const off = hub.onForceLogout(() => {
-      disposeHubClient();
-      setUser(null);
-      navigate('/login', { replace: true });
-    });
-    return () => { off(); };
-  }, [navigate, setUser]);
+  // The ForceLogout subscription lives in ChatShell so every authenticated tab
+  // reacts — not just the Sessions page — see `useForceLogoutSubscription`.
 
   const revoke = useMutation({
     mutationFn: (id: string) => sessionsApi.revoke(id),

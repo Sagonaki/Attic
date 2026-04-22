@@ -13,6 +13,7 @@ import { Contacts } from './Contacts';
 import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
+import { useForceLogoutSubscription } from '../auth/useForceLogoutSubscription';
 import { Sessions } from '../auth/Sessions';
 import { MyProfile } from '../auth/MyProfile';
 import { DeleteAccountModal } from '../auth/DeleteAccountModal';
@@ -32,6 +33,9 @@ export function ChatShell() {
   const { channelId } = useParams<{ channelId: string }>();
   useRemovedFromChannel();
   useActivityTracker();
+  // Install the ForceLogout handler at the shell level so *any* open tab
+  // reacts to a session revoke from elsewhere — not only the Sessions page.
+  useForceLogoutSubscription();
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
