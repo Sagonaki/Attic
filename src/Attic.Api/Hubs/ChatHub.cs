@@ -1,3 +1,4 @@
+using System.Buffers;
 using Attic.Api.Auth;
 using Attic.Api.RateLimiting;
 using Attic.Contracts.Attachments;
@@ -12,6 +13,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Attic.Api.Hubs;
 
@@ -25,7 +27,8 @@ public sealed class ChatHub(
     AuditLogContext audit,
     HubRateLimiter rateLimiter,
     IUnreadCountStore unreadCounts,
-    IMessageFanoutQueue fanoutQueue) : Hub
+    IMessageFanoutQueue fanoutQueue,
+    ObjectPool<MessageFanoutWorkItem> fanoutPool) : Hub
 {
     public const string Path = "/hub";
 
@@ -142,19 +145,31 @@ public sealed class ChatHub(
                                 .ToListAsync();
 
         var senderUsername = memberships.First(x => x.UserId == userId.Value).Username;
-        var memberIds = memberships
-            .Where(x => x.UserId != userId.Value && !x.IsBanned)
-            .Select(x => x.UserId)
-            .ToList();
+
+        // Rent a Guid[] from the shared ArrayPool — length ≥ memberships.Count. We fill only the
+        // first memberCount entries; the drain loop reads MemberCount, then returns the array.
+        var memberIdsArray = ArrayPool<Guid>.Shared.Rent(memberships.Count);
+        int memberCount = 0;
+        foreach (var m in memberships)
+        {
+            if (m.UserId != userId.Value && !m.IsBanned)
+                memberIdsArray[memberCount++] = m.UserId;
+        }
 
         var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, senderUsername, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
             attachmentDtos);
 
-        // Fan-out (MessageCreated broadcast + per-member unread INCR + UnreadChanged
-        // broadcast) moves to MessageFanoutService so this hub method returns as soon
-        // as the row is persisted. Preserves per-channel order: enqueue happens after
-        // SaveChanges so DB commit wins the race against any downstream read.
-        fanoutQueue.TryEnqueue(new MessageFanoutWorkItem(msg.ChannelId, dto, memberIds));
+        var work = fanoutPool.Get();
+        work.ChannelId = msg.ChannelId;
+        work.Message = dto;
+        work.MemberIds = memberIdsArray;
+        work.MemberCount = memberCount;
+        if (!fanoutQueue.TryEnqueue(work))
+        {
+            // Channel completed on host shutdown — release the rented buffers instead of leaking.
+            ArrayPool<Guid>.Shared.Return(memberIdsArray, clearArray: false);
+            fanoutPool.Return(work);
+        }
 
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }

@@ -39,7 +39,7 @@ builder.Services.AddSignalR(o =>
 }).AddHubOptions<Attic.Api.Hubs.ChatHub>(o =>
 {
     o.AddFilter(typeof(Attic.Api.Hubs.ChatHubFilter));
-}).AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis") ?? "localhost:6379");
+}).AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis") ?? "localhost:6379").AddMessagePackProtocol();
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
@@ -63,6 +63,13 @@ builder.Services.AddSingleton<Attic.Api.Hubs.MessageFanoutQueue>();
 builder.Services.AddSingleton<Attic.Api.Hubs.IMessageFanoutQueue>(
     sp => sp.GetRequiredService<Attic.Api.Hubs.MessageFanoutQueue>());
 builder.Services.AddHostedService<Attic.Api.Hubs.MessageFanoutService>();
+builder.Services.AddSingleton<Microsoft.Extensions.ObjectPool.ObjectPoolProvider,
+                              Microsoft.Extensions.ObjectPool.DefaultObjectPoolProvider>();
+builder.Services.AddSingleton<Microsoft.Extensions.ObjectPool.ObjectPool<Attic.Api.Hubs.MessageFanoutWorkItem>>(sp =>
+{
+    var provider = sp.GetRequiredService<Microsoft.Extensions.ObjectPool.ObjectPoolProvider>();
+    return provider.Create(new Attic.Api.Hubs.MessageFanoutWorkItemPolicy());
+});
 
 builder.Services.AddScoped<Attic.Api.Hubs.PresenceEventBroadcaster>();
 builder.Services.AddHostedService<Attic.Api.Services.PresenceHostedService>();
