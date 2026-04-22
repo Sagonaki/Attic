@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/avatar';
 import { ThemeToggle } from '../theme/ThemeToggle';
+import logoUrl from '../assets/attic-logo.jpg';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
@@ -44,7 +45,10 @@ export function ChatShell() {
   return (
     <div className="h-screen flex flex-col">
       <header className="flex items-center justify-between px-4 py-2 border-b bg-card text-card-foreground">
-        <div className="font-semibold">Attic</div>
+        <div className="flex items-center gap-2 font-semibold">
+          <img src={logoUrl} alt="Attic" className="h-6 w-6 rounded object-cover" />
+          <span>Attic</span>
+        </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <DropdownMenu>
