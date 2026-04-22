@@ -15,6 +15,11 @@ internal static class TestHelpers
     {
         var handler = new HttpClientHandler { CookieContainer = new System.Net.CookieContainer() };
         var client = new HttpClient(handler) { BaseAddress = fx.ApiClient.BaseAddress };
+        // Unique User-Agent per test client so the auth rate limiter (partitioned
+        // by IP + UA) gives each fresh client its own 5/min bucket. Without this,
+        // all tests collide on the shared loopback IP + default .NET HttpClient UA
+        // and blow the auth limit across the full suite.
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"AtticIntegrationTest/{Guid.NewGuid():N}");
 
         var email = $"u-{Guid.NewGuid():N}@example.com";
         var username = $"u{Random.Shared.Next():x}";

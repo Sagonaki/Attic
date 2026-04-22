@@ -133,8 +133,11 @@ public sealed class ChannelCrudFlowTests(AppHostFixture fx)
     }
 
     [Fact]
-    public async Task GET_channels_id_private_forbidden_to_non_member()
+    public async Task GET_channels_id_private_hidden_from_non_member()
     {
+        // Private channels return 404 (not 403) to non-members so an attacker
+        // can't enumerate GUIDs by distinguishing "does not exist" from
+        // "exists but hidden". See ChannelsEndpoints.GetChannelDetails.
         var ct = TestContext.Current.CancellationToken;
         var (owner, _) = await RegisterFresh(ct);
 
@@ -146,7 +149,7 @@ public sealed class ChannelCrudFlowTests(AppHostFixture fx)
 
         var (outsider, _) = await RegisterFresh(ct);
         var response = await outsider.GetAsync($"/api/channels/{channel.Id:D}", ct);
-        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]

@@ -101,7 +101,11 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed, ctx =>
         RateLimitPartition.GetFixedWindowLimiter(
-            // Partition by IP + User-Agent so integration-test clients (which set unique UAs) get isolated buckets.
+            // Partition by IP + User-Agent. For production this is a defence-in-depth
+            // measure (an attacker rotating UAs gets independent 5/min buckets per UA
+            // which is weaker than strict IP-only, but stacks with the slow password
+            // hashing we use). For integration tests it gives per-client isolation
+            // since every test HttpClient sets its own unique UA.
             partitionKey: $"{ctx.Connection.RemoteIpAddress}|{ctx.Request.Headers.UserAgent}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
@@ -141,7 +145,12 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapDefaultEndpoints();
-app.MapOpenApi();
+// OpenAPI spec leaks the full endpoint surface. Keep it dev-only so production
+// doesn't hand reconnaissance material to unauthenticated clients.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 // Map API endpoints
 app.MapAuthEndpoints();

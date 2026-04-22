@@ -204,7 +204,9 @@ public static class ChannelsEndpoints
         var isMember = await db.ChannelMembers.AsNoTracking()
             .AnyAsync(m => m.ChannelId == id && m.UserId == userId, ct);
 
-        if (channel.Kind == ChannelKind.Private && !isMember) return Results.Forbid();
+        // Return 404 (not 403) for private channels the caller isn't in so an attacker
+        // can't distinguish "doesn't exist" from "exists but hidden" by probing GUIDs.
+        if (channel.Kind == ChannelKind.Private && !isMember) return Results.NotFound();
 
         var memberCount = await db.ChannelMembers.AsNoTracking().CountAsync(m => m.ChannelId == id, ct);
 

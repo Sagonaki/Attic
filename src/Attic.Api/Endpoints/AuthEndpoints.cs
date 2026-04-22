@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Attic.Api.Endpoints;
@@ -20,13 +21,19 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth");
 
+        // NOTE: /register is not rate-limited. Brute-forcing it has low value — it
+        // creates noise rows but doesn't reveal existing accounts unless you also
+        // watch for 409 on duplicate email. Email enumeration via 409 is an
+        // acknowledged weakness tracked separately; the fix is response shape,
+        // not a rate limit.
         group.MapPost("/register", Register).AllowAnonymous();
         group.MapPost("/login", Login).AllowAnonymous()
              .RequireRateLimiting(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed);
         group.MapPost("/logout", Logout).RequireAuthorization();
         group.MapGet("/me", Me).RequireAuthorization();
         group.MapPost("/delete-account", DeleteAccount).RequireAuthorization();
-        group.MapPost("/password/forgot", ForgotPassword).AllowAnonymous();
+        group.MapPost("/password/forgot", ForgotPassword).AllowAnonymous()
+             .RequireRateLimiting(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed);
         group.MapPost("/change-password", ChangePassword).RequireAuthorization();
 
         return routes;
@@ -212,6 +219,7 @@ public static class AuthEndpoints
         AtticDbContext db,
         IPasswordHasher hasher,
         ILoggerFactory loggerFactory,
+        IHostEnvironment env,
         CancellationToken ct)
     {
         var vr = await validator.ValidateAsync(req, ct);
@@ -224,7 +232,14 @@ public static class AuthEndpoints
             var newPassword = GenerateRandomPassword(12);
             user.ChangePasswordHash(hasher.Hash(newPassword));
             await db.SaveChangesAsync(ct);
-            logger.LogInformation("[Forgot-password] New password for {Email}: {Password}", req.Email, newPassword);
+            // Dev affordance: print the new password to the console so the operator
+            // can hand it back to the user out-of-band. Never log plaintext credentials
+            // outside Development — log aggregators retain logs long enough to leak
+            // the account if the environment is ever shared.
+            if (env.IsDevelopment())
+                logger.LogInformation("[Forgot-password] New password for {Email}: {Password}", req.Email, newPassword);
+            else
+                logger.LogInformation("[Forgot-password] Password reset issued for {Email}", req.Email);
         }
 
         // Always return 200 to avoid email enumeration.

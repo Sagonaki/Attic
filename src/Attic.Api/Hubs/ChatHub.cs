@@ -190,9 +190,20 @@ public sealed class ChatHub(
         return new { ok = true };
     }
 
-    public async Task UnsubscribeFromChannel(Guid channelId)
+    public async Task<object> UnsubscribeFromChannel(Guid channelId)
     {
+        var userId = UserId;
+        if (userId is null) return new { ok = false, error = "unauthorized" };
+
+        // Mirror SubscribeToChannel: only let a real member toggle their own channel
+        // subscription. Without this check an authenticated user can dial group
+        // membership on arbitrary channel IDs and generate noise for other clients.
+        var isMember = await db.ChannelMembers.AsNoTracking()
+            .AnyAsync(m => m.ChannelId == channelId && m.UserId == userId.Value);
+        if (!isMember) return new { ok = false, error = "not_a_member" };
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Channel(channelId));
+        return new { ok = true };
     }
 
     public async Task<object> DeleteMessage(long messageId)
@@ -267,7 +278,14 @@ public sealed class ChatHub(
     public async Task<object> MarkRead(Guid channelId, long lastMessageId)
     {
         var userId = UserId;
-        if (userId is null) return new { ok = false };
+        if (userId is null) return new { ok = false, error = "unauthorized" };
+
+        // Without a membership check, any authenticated user could upsert a ChannelRead
+        // row for an arbitrary channel GUID and fire UnreadChanged on their own group.
+        // That's noise, not a data leak, but it's still unintended writes — gate it.
+        var isMember = await db.ChannelMembers.AsNoTracking()
+            .AnyAsync(m => m.ChannelId == channelId && m.UserId == userId.Value);
+        if (!isMember) return new { ok = false, error = "not_a_member" };
 
         var existing = await db.ChannelReads.AsTracking()
             .FirstOrDefaultAsync(r => r.ChannelId == channelId && r.UserId == userId.Value);
