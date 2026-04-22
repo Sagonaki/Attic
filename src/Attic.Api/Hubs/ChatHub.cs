@@ -142,12 +142,13 @@ public sealed class ChatHub(
             .Select(m => m.UserId)
             .ToListAsync();
 
-        foreach (var memberId in memberIds)
+        var fanoutTasks = memberIds.Select(async memberId =>
         {
             var newCount = await unreadCounts.IncrementAsync(memberId, request.ChannelId, default);
             await Clients.Group(GroupNames.User(memberId))
                 .SendAsync("UnreadChanged", request.ChannelId, (int)newCount);
-        }
+        });
+        await Task.WhenAll(fanoutTasks);
 
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }
