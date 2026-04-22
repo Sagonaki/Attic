@@ -22,5 +22,17 @@ public sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachmen
 
         // Ref-counted delete needs "any remaining attachment at this path?".
         b.HasIndex(a => a.StoragePath).HasDatabaseName("ix_attachments_storage_path");
+
+        b.HasOne<Message>()
+         .WithMany()
+         .HasForeignKey(a => a.MessageId)
+         .OnDelete(DeleteBehavior.SetNull)
+         .HasConstraintName("fk_attachments_message");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(a => a.UploaderId)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("fk_attachments_uploader");
     }
 }
