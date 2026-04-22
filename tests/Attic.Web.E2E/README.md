@@ -38,3 +38,13 @@ Aspire run happens to bind there, you can skip the export.
 Per spec §12.4, the CI approach is: `dotnet test` first (unit + integration), then bring up
 the AppHost and run `npx playwright test` against it. Not wired yet — that's a future
 deployment hardening task.
+
+## Interactive dev with Playwright MCP
+
+If you're using a Claude Code session that has the Playwright MCP attached (plugin:playwright),
+you can drive the same browser the tests use without writing a full spec:
+
+1. Start the AppHost and note its SPA URL.
+2. In the Claude Code session, call `browser_navigate` with the URL.
+3. Use `browser_snapshot` / `browser_click` / `browser_type` / `browser_take_screenshot` to inspect and interact.
+4. When something feels flaky, codify it as a new scenario in `tests/`.
