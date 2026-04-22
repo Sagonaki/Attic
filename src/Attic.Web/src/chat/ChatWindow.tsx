@@ -9,11 +9,14 @@ import { useAuth } from '../auth/useAuth';
 import { AttachmentPreview } from './AttachmentPreview';
 import { MessageActionsMenu } from './MessageActionsMenu';
 import { useMarkRead } from './useMarkRead';
+import { UserAvatar } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export function ChatWindow() {
   const { channelId } = useParams<{ channelId: string }>();
   const { user } = useAuth();
-  if (!channelId) return <div className="p-8 text-slate-500">Select a channel.</div>;
+  if (!channelId) return <div className="p-8 text-muted-foreground">Select a channel.</div>;
   return <ChatWindowFor channelId={channelId} user={{ id: user!.id, username: user!.username }} />;
 }
 
@@ -24,7 +27,6 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
   const send = useSendMessage(channelId, user);
   const del = useDeleteMessage(channelId);
   const edit = useEditMessage();
-  const [menuMsgId, setMenuMsgId] = useState<number | null>(null);
   const [replyTo, setReplyTo] = useState<{ messageId: number; snippet: string } | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState('');
@@ -58,51 +60,50 @@ function ChatWindowFor({ channelId, user }: { channelId: string; user: { id: str
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={listRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50">
-        {isFetchingNextPage && <div className="text-center text-xs text-slate-400">Loading older…</div>}
+      <div ref={listRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-1 bg-background">
+        {isFetchingNextPage && <div className="text-center text-xs text-muted-foreground">Loading older…</div>}
         {ordered.map(m => (
-          <div key={m.id} className="bg-white rounded px-3 py-2 shadow-sm group relative">
-            <div className="text-xs text-slate-500 flex justify-between">
-              <span>
-                {m.senderUsername} · {new Date(m.createdAt).toLocaleTimeString()}
-                {m.updatedAt && <span className="ml-2 text-slate-400">(edited)</span>}
-                {m.id < 0 && <span className="ml-2 text-slate-400">sending…</span>}
-              </span>
-              {m.id > 0 && (
-                <button onClick={() => setMenuMsgId(menuMsgId === m.id ? null : m.id)}
-                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-600 px-1"
-                        aria-label="Message actions">⋯</button>
+          <div key={m.id} className="group flex gap-2 hover:bg-accent/40 rounded-md px-2 py-1 transition-colors">
+            <UserAvatar username={m.senderUsername} className="h-8 w-8 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{m.senderUsername}</span>
+                  <span className="ml-2">{new Date(m.createdAt).toLocaleTimeString()}</span>
+                  {m.updatedAt && <span className="ml-2">(edited)</span>}
+                  {m.id < 0 && <span className="ml-2 italic">sending…</span>}
+                </div>
+                {m.id > 0 && (
+                  <MessageActionsMenu
+                    isOwn={m.senderId === user.id}
+                    isAdmin={false}
+                    onEdit={() => { setEditingId(m.id); setEditDraft(m.content); }}
+                    onReply={() => setReplyTo({ messageId: m.id, snippet: m.content.slice(0, 80) })}
+                    onDelete={() => void del(m.id)}
+                  />
+                )}
+              </div>
+              {m.replyToId && byId.get(m.replyToId) && (
+                <div className="text-xs text-muted-foreground border-l-2 border-muted-foreground/30 pl-2 my-1">
+                  <span className="font-medium">{byId.get(m.replyToId)!.senderUsername}: </span>
+                  {byId.get(m.replyToId)!.content.slice(0, 80)}
+                </div>
+              )}
+              {editingId === m.id ? (
+                <div className="flex gap-2 items-center">
+                  <Input value={editDraft} onChange={e => setEditDraft(e.target.value)}
+                         onKeyDown={e => { if (e.key === 'Enter') void saveEdit(); if (e.key === 'Escape') setEditingId(null); }}
+                         autoFocus />
+                  <Button size="sm" onClick={saveEdit}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                </div>
+              ) : (
+                <>
+                  <div className="whitespace-pre-wrap break-words text-sm">{m.content}</div>
+                  {m.attachments?.map(a => <AttachmentPreview key={a.id} attachment={a} />)}
+                </>
               )}
             </div>
-            {m.replyToId && byId.get(m.replyToId) && (
-              <div className="text-xs text-slate-500 border-l-2 border-slate-300 pl-2 mb-1">
-                {byId.get(m.replyToId)!.senderUsername}: {byId.get(m.replyToId)!.content.slice(0, 80)}
-              </div>
-            )}
-            {editingId === m.id ? (
-              <div className="flex gap-2">
-                <input className="flex-1 border rounded px-2 py-1 text-sm"
-                       value={editDraft} onChange={e => setEditDraft(e.target.value)}
-                       onKeyDown={e => { if (e.key === 'Enter') void saveEdit(); if (e.key === 'Escape') setEditingId(null); }} />
-                <button onClick={saveEdit} className="text-xs text-blue-600">Save</button>
-                <button onClick={() => setEditingId(null)} className="text-xs">Cancel</button>
-              </div>
-            ) : (
-              <>
-                <div className="whitespace-pre-wrap break-words">{m.content}</div>
-                {m.attachments?.map(a => <AttachmentPreview key={a.id} attachment={a} />)}
-              </>
-            )}
-            {menuMsgId === m.id && (
-              <MessageActionsMenu
-                isOwn={m.senderId === user.id}
-                isAdmin={false}
-                onEdit={() => { setEditingId(m.id); setEditDraft(m.content); setMenuMsgId(null); }}
-                onReply={() => { setReplyTo({ messageId: m.id, snippet: m.content.slice(0, 80) }); setMenuMsgId(null); }}
-                onDelete={() => { void del(m.id); setMenuMsgId(null); }}
-                onClose={() => setMenuMsgId(null)}
-              />
-            )}
           </div>
         ))}
       </div>
