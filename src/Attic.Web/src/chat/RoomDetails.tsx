@@ -127,7 +127,9 @@ function MemberRow({
       <div className="flex items-center gap-2 min-w-0">
         <div className="relative">
           <UserAvatar username={m.username} className="h-7 w-7" />
-          <span className={cn('absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-card', dot)} />
+          {m.userId !== selfId && (
+            <span className={cn('absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-card', dot)} />
+          )}
         </div>
         <span className="truncate">{m.username}</span>
         <Badge variant={roleVariant} className="text-[10px] py-0 px-1.5">{m.role}</Badge>
