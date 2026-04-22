@@ -82,7 +82,11 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
                     active && 'bg-accent text-accent-foreground'
                   )}
                 >
-                  <span className="truncate">{c.name ?? 'Personal chat'}</span>
+                  <span className="truncate">
+                    {c.kind === 'personal'
+                      ? (c.otherMemberUsername ?? 'Personal chat')
+                      : (c.name ?? 'Channel')}
+                  </span>
                   {c.unreadCount > 0 && (
                     <Badge variant="default" className="h-5 px-1.5">{c.unreadCount}</Badge>
                   )}
