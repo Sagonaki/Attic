@@ -1,4 +1,8 @@
 import { useRef, useState } from 'react';
+import { Paperclip, Send, X, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { useUploadAttachments } from './useUploadAttachments';
 import { ReplyPreview } from './ReplyPreview';
 
@@ -17,7 +21,6 @@ export function ChatInput({ onSend, replyTo, onCancelReply }: ChatInputProps) {
   const [content, setContent] = useState('');
   const { pending, upload, clear, removeOne } = useUploadAttachments();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const readyAttachments = pending.filter(p => p.status === 'done' && p.attachment).map(p => p.attachment!.id);
   const isBusy = pending.some(p => p.status === 'uploading');
 
@@ -45,24 +48,28 @@ export function ChatInput({ onSend, replyTo, onCancelReply }: ChatInputProps) {
     <div onDragOver={e => e.preventDefault()} onDrop={onDrop}>
       {replyTo && <ReplyPreview replySnippet={replyTo.snippet} onCancel={() => onCancelReply?.()} />}
       {pending.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 bg-slate-50 border-t">
+        <div className="flex flex-wrap gap-2 p-2 bg-muted/50 border-t">
           {pending.map(p => (
-            <div key={p.id} className="flex items-center gap-1 px-2 py-1 bg-white border rounded text-xs">
-              <span className={p.status === 'error' ? 'text-red-600' : p.status === 'uploading' ? 'text-slate-500' : ''}>
-                {p.file.name}
-              </span>
-              {p.status === 'uploading' && <span className="text-slate-400">…</span>}
-              <button onClick={() => removeOne(p.id)} className="text-slate-400">×</button>
-            </div>
+            <Badge key={p.id} variant="secondary" className="gap-1 pr-1">
+              <FileText className="h-3 w-3" />
+              <span className="max-w-[12rem] truncate">{p.file.name}</span>
+              {p.status === 'uploading' && <span className="text-muted-foreground">…</span>}
+              {p.status === 'error' && <span className="text-destructive">!</span>}
+              <button onClick={() => removeOne(p.id)} className="ml-1 rounded hover:bg-background/50 p-0.5">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2 p-3 border-t bg-white">
+      <div className="flex items-end gap-2 p-3 border-t bg-card">
         <input ref={fileInputRef} type="file" multiple className="hidden"
                onChange={e => { if (e.target.files) { void upload(Array.from(e.target.files)); e.target.value = ''; } }} />
-        <button onClick={() => fileInputRef.current?.click()} className="text-slate-500 hover:text-slate-700 pb-2">📎</button>
-        <textarea
-          className="flex-1 border rounded px-3 py-2 resize-none"
+        <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
+          <Paperclip className="h-4 w-4" />
+        </Button>
+        <Textarea
+          className="flex-1 min-h-[40px] max-h-40 resize-none"
           rows={1}
           placeholder="Type a message…"
           value={content}
@@ -72,10 +79,9 @@ export function ChatInput({ onSend, replyTo, onCancelReply }: ChatInputProps) {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void submit(); }
           }}
         />
-        <button onClick={submit} disabled={isBusy}
-                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          Send
-        </button>
+        <Button onClick={submit} disabled={isBusy} aria-label="Send message">
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
