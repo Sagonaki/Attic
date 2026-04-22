@@ -7,6 +7,7 @@ using Attic.Domain.Entities;
 using Attic.Domain.Enums;
 using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
+using Attic.Infrastructure.UnreadCounts;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -119,6 +120,7 @@ public static class ChannelsEndpoints
     private static async Task<IResult> GetMyChannels(
         AtticDbContext db,
         CurrentUser currentUser,
+        IUnreadCountStore unreadCounts,
         CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return Results.Unauthorized();
@@ -144,14 +146,6 @@ public static class ChannelsEndpoints
             .Where(r => r.UserId == userId)
             .ToDictionaryAsync(r => r.ChannelId, r => r.LastReadMessageId, ct);
 
-        var unreadMap = new Dictionary<Guid, int>();
-        foreach (var r in rows)
-        {
-            var lastRead = readMap.TryGetValue(r.Id, out var lr) ? lr : 0;
-            unreadMap[r.Id] = await db.Messages.AsNoTracking()
-                .CountAsync(m => m.ChannelId == r.Id && m.Id > lastRead, ct);
-        }
-
         // For personal channels, pull the other member's username so the sidebar renders it.
         var personalIds = rows.Where(r => r.Kind == ChannelKind.Personal).Select(r => r.Id).ToList();
         var personalOthers = personalIds.Count == 0
@@ -162,16 +156,34 @@ public static class ChannelsEndpoints
                       (m, u) => new { m.ChannelId, u.Username })
                 .ToDictionaryAsync(x => x.ChannelId, x => x.Username, ct);
 
-        var items = rows.Select(r => new ChannelSummary(
-            r.Id,
-            r.Kind.ToString().ToLowerInvariant(),
-            r.Name,
-            r.Description,
-            r.OwnerId,
-            countMap.TryGetValue(r.Id, out var n) ? n : 0,
-            unreadMap.TryGetValue(r.Id, out var u) ? u : 0,
-            personalOthers.TryGetValue(r.Id, out var other) ? other : null
-        )).ToList();
+        var items = new List<ChannelSummary>(rows.Count);
+        foreach (var r in rows)
+        {
+            var cached = await unreadCounts.TryGetAsync(userId, r.Id, ct);
+            long unreadCount;
+            if (cached is not null)
+            {
+                unreadCount = cached.Value;
+            }
+            else
+            {
+                var lastRead = readMap.TryGetValue(r.Id, out var lr) ? lr : 0;
+                unreadCount = await db.Messages.AsNoTracking()
+                    .CountAsync(m => m.ChannelId == r.Id && m.Id > lastRead, ct);
+                await unreadCounts.SetAsync(userId, r.Id, unreadCount, ct);
+            }
+
+            items.Add(new ChannelSummary(
+                r.Id,
+                r.Kind.ToString().ToLowerInvariant(),
+                r.Name,
+                r.Description,
+                r.OwnerId,
+                countMap.TryGetValue(r.Id, out var n) ? n : 0,
+                (int)unreadCount,
+                personalOthers.TryGetValue(r.Id, out var other) ? other : null
+            ));
+        }
 
         return Results.Ok(items);
     }

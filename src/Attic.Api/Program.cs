@@ -49,6 +49,9 @@ builder.Services.AddScoped<Attic.Api.Hubs.MessageEventBroadcaster>();
 builder.Services.AddSingleton<Attic.Infrastructure.Presence.IPresenceStore,
                               Attic.Infrastructure.Presence.RedisPresenceStore>();
 
+builder.Services.AddSingleton<Attic.Infrastructure.UnreadCounts.IUnreadCountStore,
+                              Attic.Infrastructure.UnreadCounts.RedisUnreadCountStore>();
+
 builder.Services.AddScoped<Attic.Api.Hubs.PresenceEventBroadcaster>();
 builder.Services.AddHostedService<Attic.Api.Services.PresenceHostedService>();
 builder.Services.AddScoped<Attic.Api.Hubs.SessionsEventBroadcaster>();
