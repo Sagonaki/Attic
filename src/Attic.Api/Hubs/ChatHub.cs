@@ -7,6 +7,7 @@ using Attic.Domain.Entities;
 using Attic.Domain.Services;
 using Attic.Infrastructure.Audit;
 using Attic.Infrastructure.Persistence;
+using Attic.Infrastructure.UnreadCounts;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -22,7 +23,8 @@ public sealed class ChatHub(
     IValidator<EditMessageRequest> editValidator,
     Attic.Infrastructure.Presence.IPresenceStore presenceStore,
     AuditLogContext audit,
-    HubRateLimiter rateLimiter) : Hub
+    HubRateLimiter rateLimiter,
+    IUnreadCountStore unreadCounts) : Hub
 {
     public const string Path = "/hub";
 
@@ -134,7 +136,7 @@ public sealed class ChatHub(
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
-        // Bump per-member unread counters (except the sender).
+        // Redis-backed unread counters: one INCR per non-sender member instead of a COUNT query.
         var memberIds = await db.ChannelMembers.AsNoTracking()
             .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
             .Select(m => m.UserId)
@@ -142,14 +144,9 @@ public sealed class ChatHub(
 
         foreach (var memberId in memberIds)
         {
-            var read = await db.ChannelReads.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.ChannelId == request.ChannelId && r.UserId == memberId);
-            var lastRead = read?.LastReadMessageId ?? 0;
-            var unreadCount = await db.Messages.AsNoTracking()
-                .CountAsync(m => m.ChannelId == request.ChannelId && m.Id > lastRead);
-
+            var newCount = await unreadCounts.IncrementAsync(memberId, request.ChannelId, default);
             await Clients.Group(GroupNames.User(memberId))
-                .SendAsync("UnreadChanged", request.ChannelId, unreadCount);
+                .SendAsync("UnreadChanged", request.ChannelId, (int)newCount);
         }
 
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
@@ -261,6 +258,8 @@ public sealed class ChatHub(
             existing.MarkRead(lastMessageId, clock.UtcNow);
         }
         await db.SaveChangesAsync();
+
+        await unreadCounts.ResetAsync(userId.Value, channelId, default);
 
         await Clients.Group(GroupNames.User(userId.Value))
             .SendAsync("UnreadChanged", channelId, 0);
