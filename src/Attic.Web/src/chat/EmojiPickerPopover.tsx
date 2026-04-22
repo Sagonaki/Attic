@@ -30,7 +30,11 @@ export function EmojiPickerPopover({ onPick }: { onPick: (emoji: string) => void
         <Smile className="h-4 w-4" />
       </Button>
       {open && (
-        <div className="absolute bottom-full mb-2 right-0 z-50">
+        // left-0 anchors the popover to the Smile button (near the left edge of the
+        // chat input). Anchoring right-0 would push the 352 px picker off-screen to
+        // the left, where the surrounding MAIN's overflow:hidden would clip all but
+        // the rightmost sliver — making tile clicks miss the hit-test.
+        <div className="absolute bottom-full mb-2 left-0 z-50">
           <Picker
             data={data}
             theme={resolvedTheme}
