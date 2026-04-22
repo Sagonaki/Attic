@@ -72,4 +72,23 @@ public sealed class BlocksFlowTests(AppHostFixture fx)
             new SendFriendRequestRequest(bobUsername, null), ct);
         send.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task List_blocks_returns_blocked_users()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (alice, _, _) = await Register(ct);
+        var (_, bobUsername, _) = await Register(ct);
+
+        var search = await alice.GetAsync($"/api/users/search?q={bobUsername[..4]}", ct);
+        var bobId = (await search.Content.ReadFromJsonAsync<List<UserSearchResult>>(ct))!
+            .First(u => u.Username == bobUsername).Id;
+
+        (await alice.PostAsync($"/api/users/{bobId:D}/block", null, ct)).EnsureSuccessStatusCode();
+
+        var blocks = await alice.GetAsync("/api/users/blocks", ct);
+        blocks.EnsureSuccessStatusCode();
+        var rows = (await blocks.Content.ReadFromJsonAsync<List<BlockedUserDto>>(ct))!;
+        rows.ShouldContain(b => b.UserId == bobId && b.Username == bobUsername);
+    }
 }

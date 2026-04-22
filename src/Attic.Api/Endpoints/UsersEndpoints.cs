@@ -35,12 +35,13 @@ public static class UsersEndpoints
 
         var rows = await db.UserBlocks.AsNoTracking()
             .Where(b => b.BlockerId == me)
-            .Join(db.Users.IgnoreQueryFilters(), b => b.BlockedId, u => u.Id,
-                  (b, u) => new BlockedUserDto(u.Id, u.Username, b.CreatedAt))
-            .OrderByDescending(b => b.BlockedAt)
+            .Join(db.Users.AsNoTracking(), b => b.BlockedId, u => u.Id,
+                  (b, u) => new { u.Id, u.Username, b.CreatedAt })
+            .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(ct);
 
-        return Results.Ok(rows);
+        var result = rows.Select(x => new BlockedUserDto(x.Id, x.Username, x.CreatedAt)).ToList();
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> Search(
