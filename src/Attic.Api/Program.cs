@@ -63,6 +63,13 @@ builder.Services.AddSingleton<Attic.Api.Hubs.MessageFanoutQueue>();
 builder.Services.AddSingleton<Attic.Api.Hubs.IMessageFanoutQueue>(
     sp => sp.GetRequiredService<Attic.Api.Hubs.MessageFanoutQueue>());
 builder.Services.AddHostedService<Attic.Api.Hubs.MessageFanoutService>();
+builder.Services.AddSingleton<Microsoft.Extensions.ObjectPool.ObjectPoolProvider,
+                              Microsoft.Extensions.ObjectPool.DefaultObjectPoolProvider>();
+builder.Services.AddSingleton<Microsoft.Extensions.ObjectPool.ObjectPool<Attic.Api.Hubs.MessageFanoutWorkItem>>(sp =>
+{
+    var provider = sp.GetRequiredService<Microsoft.Extensions.ObjectPool.ObjectPoolProvider>();
+    return provider.Create(new Attic.Api.Hubs.MessageFanoutWorkItemPolicy());
+});
 
 builder.Services.AddScoped<Attic.Api.Hubs.PresenceEventBroadcaster>();
 builder.Services.AddHostedService<Attic.Api.Services.PresenceHostedService>();
