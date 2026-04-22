@@ -13,8 +13,8 @@ export function AttachmentPreview({ attachment }: { attachment: AttachmentDto })
   const kb = Math.max(1, Math.round(attachment.sizeBytes / 1024));
   return (
     <a href={href} target="_blank" rel="noreferrer"
-       className="inline-flex items-center gap-2 mt-1 px-2 py-1 border rounded text-xs text-slate-700 hover:bg-slate-50">
-      📎 {attachment.originalFileName} <span className="text-slate-400">· {kb} KB</span>
+       className="inline-flex items-center gap-2 mt-1 px-2 py-1 border rounded text-xs text-foreground hover:bg-muted/30">
+      📎 {attachment.originalFileName} <span className="text-muted-foreground/70">· {kb} KB</span>
     </a>
   );
 }
