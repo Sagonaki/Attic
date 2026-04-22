@@ -1,3 +1,4 @@
+using System.Buffers;
 using Attic.Infrastructure.UnreadCounts;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.ObjectPool;
@@ -57,7 +58,7 @@ public sealed class MessageFanoutService(
             {
                 // Array came from ArrayPool in ChatHub. Return it first — Reset() clears MemberIds reference.
                 if (memberIdsArray.Length > 0)
-                    System.Buffers.ArrayPool<Guid>.Shared.Return(memberIdsArray, clearArray: false);
+                    ArrayPool<Guid>.Shared.Return(memberIdsArray, clearArray: false);
                 fanoutPool.Return(item);
             }
         }

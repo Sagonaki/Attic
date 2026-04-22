@@ -1,3 +1,4 @@
+using System.Buffers;
 using Attic.Api.Auth;
 using Attic.Api.RateLimiting;
 using Attic.Contracts.Attachments;
@@ -12,6 +13,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Attic.Api.Hubs;
 
@@ -26,7 +28,7 @@ public sealed class ChatHub(
     HubRateLimiter rateLimiter,
     IUnreadCountStore unreadCounts,
     IMessageFanoutQueue fanoutQueue,
-    Microsoft.Extensions.ObjectPool.ObjectPool<MessageFanoutWorkItem> fanoutPool) : Hub
+    ObjectPool<MessageFanoutWorkItem> fanoutPool) : Hub
 {
     public const string Path = "/hub";
 
@@ -146,7 +148,7 @@ public sealed class ChatHub(
 
         // Rent a Guid[] from the shared ArrayPool — length ≥ memberships.Count. We fill only the
         // first memberCount entries; the drain loop reads MemberCount, then returns the array.
-        var memberIdsArray = System.Buffers.ArrayPool<Guid>.Shared.Rent(memberships.Count);
+        var memberIdsArray = ArrayPool<Guid>.Shared.Rent(memberships.Count);
         int memberCount = 0;
         foreach (var m in memberships)
         {
@@ -162,7 +164,12 @@ public sealed class ChatHub(
         work.Message = dto;
         work.MemberIds = memberIdsArray;
         work.MemberCount = memberCount;
-        fanoutQueue.TryEnqueue(work);
+        if (!fanoutQueue.TryEnqueue(work))
+        {
+            // Channel completed on host shutdown — release the rented buffers instead of leaking.
+            ArrayPool<Guid>.Shared.Return(memberIdsArray, clearArray: false);
+            fanoutPool.Return(work);
+        }
 
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }
