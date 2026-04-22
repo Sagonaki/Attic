@@ -115,7 +115,7 @@ All packages declared in `Directory.Packages.props` (Central Package Management)
 - .NET 10 SDK installed (`dotnet --version` ≥ `10.0.100`).
 - Docker Desktop running (Aspire container resources require it).
 - Node 20+ and npm 10+.
-- Working directory: the repo root (`/Users/alexandershurygin/Attic` in dev, but treat as `.` in all commands).
+- Working directory: the repo root; treat as `.` in all commands.
 
 Before starting, verify the existing FE prototype still builds:
 

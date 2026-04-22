@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Worktrees and IDE state
+.worktrees/
+.vs/
+.vscode/
+.idea/
+.claude/
+
+# Build output (rebuilt inside containers)
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+**/.next/
+**/TestResults/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Aspire (local-dev only, not used by compose)
+.aspire/
+src/Attic.AppHost/
+
+# Tests that don't need to end up in images
+tests/
+**/coverage/
+**/load-reports/
+**/playwright-report/
+**/test-results/
+
+# Local NuGet redirects
+NuGet.config
+nuget.config
+
+# Editor scratch
+*.swp
+*.user

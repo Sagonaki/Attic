@@ -162,8 +162,9 @@ app.MapHub<Attic.Api.Hubs.ChatHub>(Attic.Api.Hubs.ChatHub.Path).RequireAuthoriza
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AtticDbContext>();
+    var hasher = scope.ServiceProvider.GetRequiredService<Attic.Domain.Abstractions.IPasswordHasher>();
     await db.Database.MigrateAsync();
-    await SeedData.EnsureSeededAsync(db, CancellationToken.None);
+    await SeedData.EnsureSeededAsync(db, hasher, CancellationToken.None);
 }
 
 app.Run();

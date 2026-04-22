@@ -1314,7 +1314,7 @@ git commit -m "chore(api): production appsettings (attachments root, log levels)
 
 - [ ] **Step 19.1: If `README.md` exists, append a Phase 6 deploy note**
 
-Check `/Users/alexandershurygin/Attic/README.md` — if present, append:
+Check `README.md` at the repo root — if present, append:
 
 ```md
 ## Production deployment

@@ -6,6 +6,14 @@ obj/
 .vs/
 TestResults/
 .aspire/
+# NBomber output embeds the host machine name in the HTML/JSON reports.
+tests/Attic.Web.LoadTests/load-reports/
+
+# Tooling-specific scratch — must not land in a public repo.
+.claude/
+.playwright-mcp/
+# Stray repo-root logo left by an IDE upload (not referenced by any project).
+/Attic logo.jpeg
 
 # Local-only NuGet config (e.g., to redirect packages folder around a permission issue).
 NuGet.config

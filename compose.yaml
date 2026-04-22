@@ -1,0 +1,80 @@
+####################################################################
+# Attic — production-like docker compose.                           #
+#                                                                   #
+# `docker compose up` (or `docker compose up --build`) orchestrates #
+# everything: Postgres, Redis, the API, and the SPA + nginx proxy.  #
+#                                                                   #
+# Aspire is intentionally NOT used here — Aspire is the local-dev   #
+# orchestrator. For any deployment target we wire the services      #
+# directly via compose. That keeps the image set small, avoids      #
+# Docker-in-Docker, and matches how you'd ship the app for real.    #
+####################################################################
+
+name: attic
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: attic
+      POSTGRES_PASSWORD: attic_dev_password
+      POSTGRES_DB: attic
+    command: ["postgres", "-c", "max_connections=400"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attic -d attic"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      # ConnectionStrings: IConfiguration reads both the nested JSON form and
+      # the env-var form `ConnectionStrings__<name>`. Host/port are the compose
+      # service names; the bridge network resolves them.
+      ConnectionStrings__attic: "Host=postgres;Port=5432;Database=attic;Username=attic;Password=attic_dev_password;Maximum Pool Size=300"
+      ConnectionStrings__redis: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      Attachments__Root: "/data/attachments"
+    volumes:
+      - attachments:/data/attachments
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Expose the API on the host for direct curl / integration testing.
+    # The SPA talks to the API through nginx on port 3000, not this one.
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  pg_data:
+  redis_data:
+  attachments:

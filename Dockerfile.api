@@ -1,0 +1,49 @@
+####################################################################
+# Attic API — multi-stage .NET 10 build.                            #
+# Build context: the repo root (docker compose uses `context: .`).  #
+####################################################################
+
+# ---- build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+WORKDIR /src
+
+# Copy the pieces dotnet restore needs before copying sources so
+# the package-restore layer caches on dependency changes only.
+COPY global.json Directory.Packages.props Directory.Build.props* nuget.config* ./
+COPY src/Attic.Api/Attic.Api.csproj                     src/Attic.Api/
+COPY src/Attic.Contracts/Attic.Contracts.csproj         src/Attic.Contracts/
+COPY src/Attic.Domain/Attic.Domain.csproj               src/Attic.Domain/
+COPY src/Attic.Infrastructure/Attic.Infrastructure.csproj src/Attic.Infrastructure/
+COPY src/Attic.ServiceDefaults/Attic.ServiceDefaults.csproj src/Attic.ServiceDefaults/
+RUN dotnet restore src/Attic.Api/Attic.Api.csproj
+
+# Now copy the rest.
+COPY src/ ./src/
+RUN dotnet publish src/Attic.Api/Attic.Api.csproj \
+        -c Release -o /app/publish \
+        --no-restore \
+        /p:UseAppHost=false
+
+# ---- runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
+WORKDIR /app
+
+# Non-root user (Alpine).
+RUN addgroup -S attic && adduser -S attic -G attic
+COPY --from=build /app/publish ./
+
+# Attachments live in a bind-mounted volume in compose; make sure the
+# default path exists and is owned by the non-root user.
+RUN mkdir -p /data/attachments && chown -R attic:attic /data /app
+USER attic
+
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    Attachments__Root=/data/attachments
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget -qO- http://localhost:8080/openapi/v1.json > /dev/null || exit 1
+
+ENTRYPOINT ["dotnet", "Attic.Api.dll"]
