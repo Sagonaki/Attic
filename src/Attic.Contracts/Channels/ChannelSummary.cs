@@ -7,4 +7,5 @@ public sealed record ChannelSummary(
     string? Description,
     Guid? OwnerId,
     int MemberCount,
-    int UnreadCount);
+    int UnreadCount,
+    string? OtherMemberUsername = null);

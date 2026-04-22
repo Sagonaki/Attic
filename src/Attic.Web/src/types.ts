@@ -72,6 +72,7 @@ export interface ChannelSummary {
   ownerId: string | null;
   memberCount: number;
   unreadCount: number;
+  otherMemberUsername: string | null;
 }
 
 export interface ChannelDetails {
@@ -191,3 +192,7 @@ export interface ActiveSessionDto {
 export interface DeleteAccountRequest {
   password: string;
 }
+
+export interface ForgotPasswordRequest { email: string; }
+export interface ChangePasswordRequest { currentPassword: string; newPassword: string; }
+export interface BlockedUserDto { userId: string; username: string; blockedAt: string; }

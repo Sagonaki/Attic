@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { LogOut, Trash2 } from 'lucide-react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { LogOut, Trash2, User as UserIcon, Settings } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import { ChatWindow } from './ChatWindow';
@@ -14,6 +14,7 @@ import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
 import { Sessions } from '../auth/Sessions';
+import { MyProfile } from '../auth/MyProfile';
 import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -56,6 +57,13 @@ export function ChatShell() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/profile"><UserIcon className="h-4 w-4" /> My profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings/sessions"><Settings className="h-4 w-4" /> Active sessions</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
                 <LogOut className="h-4 w-4" /> Sign out
               </DropdownMenuItem>
@@ -73,7 +81,8 @@ export function ChatShell() {
           {pathname === '/invitations' && <InvitationsInbox />}
           {pathname === '/contacts' && <Contacts />}
           {pathname === '/settings/sessions' && <Sessions />}
-          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && pathname !== '/settings/sessions' && (
+          {pathname === '/profile' && <MyProfile />}
+          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && pathname !== '/settings/sessions' && pathname !== '/profile' && (
             <>
               <div className="flex-1 flex flex-col"><ChatWindow /></div>
               {channelId && <RoomDetails channelId={channelId} />}

@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { friendsApi } from '../api/friends';
 import { getOrCreateHubClient } from '../api/signalr';
 
@@ -15,7 +16,10 @@ export function useFriendRequests() {
     const hub = getOrCreateHubClient();
     const invalidate = () => { void qc.invalidateQueries({ queryKey: ['friend-requests'] }); };
     const off1 = hub.onFriendRequestReceived(invalidate);
-    const off2 = hub.onFriendRequestDecided(invalidate);
+    const off2 = hub.onFriendRequestDecided((_id, status) => {
+      invalidate();
+      if (status === 'accepted') toast.success('Friend request accepted!');
+    });
     return () => { off1(); off2(); };
   }, [qc]);
 

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Attic.Api.Endpoints;
 
@@ -25,6 +26,8 @@ public static class AuthEndpoints
         group.MapPost("/logout", Logout).RequireAuthorization();
         group.MapGet("/me", Me).RequireAuthorization();
         group.MapPost("/delete-account", DeleteAccount).RequireAuthorization();
+        group.MapPost("/password/forgot", ForgotPassword).AllowAnonymous();
+        group.MapPost("/change-password", ChangePassword).RequireAuthorization();
 
         return routes;
     }
@@ -201,5 +204,65 @@ public static class AuthEndpoints
         // Clear the caller's cookie.
         http.Response.Cookies.Delete(AtticAuthenticationOptions.CookieName);
         return Results.NoContent();
+    }
+
+    private static async Task<IResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest req,
+        IValidator<ForgotPasswordRequest> validator,
+        AtticDbContext db,
+        IPasswordHasher hasher,
+        ILoggerFactory loggerFactory,
+        CancellationToken ct)
+    {
+        var vr = await validator.ValidateAsync(req, ct);
+        if (!vr.IsValid) return Results.BadRequest(new ApiError(vr.Errors[0].ErrorCode, vr.Errors[0].ErrorMessage));
+
+        var logger = loggerFactory.CreateLogger("ForgotPassword");
+        var user = await db.Users.AsTracking().FirstOrDefaultAsync(u => u.Email == req.Email, ct);
+        if (user is not null)
+        {
+            var newPassword = GenerateRandomPassword(12);
+            user.ChangePasswordHash(hasher.Hash(newPassword));
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("[Forgot-password] New password for {Email}: {Password}", req.Email, newPassword);
+        }
+
+        // Always return 200 to avoid email enumeration.
+        return Results.Ok(new ForgotPasswordResponse(true));
+    }
+
+    private static async Task<IResult> ChangePassword(
+        [FromBody] ChangePasswordRequest req,
+        IValidator<ChangePasswordRequest> validator,
+        AtticDbContext db,
+        IPasswordHasher hasher,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+
+        var vr = await validator.ValidateAsync(req, ct);
+        if (!vr.IsValid) return Results.BadRequest(new ApiError(vr.Errors[0].ErrorCode, vr.Errors[0].ErrorMessage));
+
+        var user = await db.Users.AsTracking().FirstOrDefaultAsync(u => u.Id == currentUser.UserIdOrThrow, ct);
+        if (user is null) return Results.Unauthorized();
+
+        if (!hasher.Verify(user.PasswordHash, req.CurrentPassword))
+            return Results.BadRequest(new ApiError("invalid_password", "Current password is incorrect."));
+
+        user.ChangePasswordHash(hasher.Hash(req.NewPassword));
+        await db.SaveChangesAsync(ct);
+
+        return Results.NoContent();
+    }
+
+    private static string GenerateRandomPassword(int length)
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        var bytes = new byte[length];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+        var result = new char[length];
+        for (int i = 0; i < length; i++) result[i] = chars[bytes[i] % chars.Length];
+        return new string(result);
     }
 }

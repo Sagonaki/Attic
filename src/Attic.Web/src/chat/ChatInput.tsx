@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useUploadAttachments } from './useUploadAttachments';
 import { ReplyPreview } from './ReplyPreview';
+import { EmojiPickerPopover } from './EmojiPickerPopover';
 
 type OnSend = (
   content: string,
@@ -65,6 +66,7 @@ export function ChatInput({ onSend, replyTo, onCancelReply }: ChatInputProps) {
       <div className="flex items-end gap-2 p-3 border-t bg-card">
         <input ref={fileInputRef} type="file" multiple className="hidden"
                onChange={e => { if (e.target.files) { void upload(Array.from(e.target.files)); e.target.value = ''; } }} />
+        <EmojiPickerPopover onPick={emoji => setContent(c => c + emoji)} />
         <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} aria-label="Attach file">
           <Paperclip className="h-4 w-4" />
         </Button>

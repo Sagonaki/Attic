@@ -6,6 +6,7 @@ import { useAuth } from './useAuth';
 import type { MeResponse, ApiError } from '../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 
 export function Login() {
   const { setUser } = useAuth();
@@ -14,6 +15,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,6 +34,7 @@ export function Login() {
   }
 
   return (
+    <>
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm border bg-card text-card-foreground rounded-lg shadow-sm p-6 space-y-4">
         <div className="flex items-center gap-2">
@@ -44,6 +47,12 @@ export function Login() {
           <Input type="password" placeholder="Password" autoComplete="current-password" required
                  value={password} onChange={e => setPassword(e.target.value)} />
           {error && <div className="text-sm text-destructive">{error}</div>}
+          <div className="flex justify-end -mt-1">
+            <button type="button" onClick={() => setForgotOpen(true)}
+                    className="text-xs text-primary underline-offset-4 hover:underline">
+              Forgot your password?
+            </button>
+          </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
@@ -53,5 +62,7 @@ export function Login() {
         </div>
       </div>
     </div>
+    <ForgotPasswordDialog open={forgotOpen} onClose={() => setForgotOpen(false)} />
+    </>
   );
 }
