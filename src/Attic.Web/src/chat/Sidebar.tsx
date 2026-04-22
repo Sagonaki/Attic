@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Globe, Lock, MessageSquare, Plus, BookOpen, Mail, Users, Settings } from 'lucide-react';
+import { Globe, Lock, MessageSquare, Plus, BookOpen, Mail, Users } from 'lucide-react';
 import { useChannelList } from './useChannelList';
 import { useOpenPersonalChat } from './useOpenPersonalChat';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -94,10 +94,9 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
       </ScrollArea>
 
       <Separator />
-      <div className="p-2 grid grid-cols-3 gap-1">
+      <div className="p-2 grid grid-cols-2 gap-1">
         <Button asChild variant="ghost" size="sm"><Link to="/contacts"><Users className="h-3.5 w-3.5" />Contacts</Link></Button>
         <Button asChild variant="ghost" size="sm"><Link to="/invitations"><Mail className="h-3.5 w-3.5" />Invites</Link></Button>
-        <Button asChild variant="ghost" size="sm"><Link to="/settings/sessions"><Settings className="h-3.5 w-3.5" />Settings</Link></Button>
       </div>
     </aside>
   );
