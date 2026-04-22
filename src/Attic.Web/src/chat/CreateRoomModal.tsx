@@ -3,6 +3,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { channelsApi } from '../api/channels';
 import type { ApiError } from '../types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
 export function CreateRoomModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -23,31 +27,34 @@ export function CreateRoomModal({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow p-6 w-96 space-y-3" onClick={e => e.stopPropagation()}>
-        <h2 className="font-semibold">New room</h2>
-        <input className="w-full border rounded px-3 py-2" placeholder="Name (3-120 chars)"
-               value={name} onChange={e => setName(e.target.value)} maxLength={120} />
-        <input className="w-full border rounded px-3 py-2" placeholder="Description (optional)"
-               value={description} onChange={e => setDescription(e.target.value)} maxLength={1024} />
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="radio" checked={kind === 'public'} onChange={() => setKind('public')} /> Public
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" checked={kind === 'private'} onChange={() => setKind('private')} /> Private
-          </label>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New room</DialogTitle>
+          <DialogDescription>Create a public or private channel.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input placeholder="Name (3-120 chars)" value={name}
+                 onChange={e => setName(e.target.value)} maxLength={120} />
+          <Textarea placeholder="Description (optional)" value={description}
+                    onChange={e => setDescription(e.target.value)} maxLength={1024} rows={2} />
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" checked={kind === 'public'} onChange={() => setKind('public')} /> Public
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" checked={kind === 'private'} onChange={() => setKind('private')} /> Private
+            </label>
+          </div>
+          {error && <div className="text-sm text-destructive">{error}</div>}
         </div>
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1 text-sm">Cancel</button>
-          <button onClick={() => mutation.mutate()}
-                  disabled={mutation.isPending || name.trim().length < 3}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded disabled:opacity-50">
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || name.trim().length < 3}>
             {mutation.isPending ? 'Creating…' : 'Create'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
