@@ -152,6 +152,16 @@ public static class ChannelsEndpoints
                 .CountAsync(m => m.ChannelId == r.Id && m.Id > lastRead, ct);
         }
 
+        // For personal channels, pull the other member's username so the sidebar renders it.
+        var personalIds = rows.Where(r => r.Kind == ChannelKind.Personal).Select(r => r.Id).ToList();
+        var personalOthers = personalIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await db.ChannelMembers.AsNoTracking()
+                .Where(m => personalIds.Contains(m.ChannelId) && m.UserId != userId)
+                .Join(db.Users.IgnoreQueryFilters(), m => m.UserId, u => u.Id,
+                      (m, u) => new { m.ChannelId, u.Username })
+                .ToDictionaryAsync(x => x.ChannelId, x => x.Username, ct);
+
         var items = rows.Select(r => new ChannelSummary(
             r.Id,
             r.Kind.ToString().ToLowerInvariant(),
@@ -159,7 +169,8 @@ public static class ChannelsEndpoints
             r.Description,
             r.OwnerId,
             countMap.TryGetValue(r.Id, out var n) ? n : 0,
-            UnreadCount: unreadMap.TryGetValue(r.Id, out var u) ? u : 0
+            unreadMap.TryGetValue(r.Id, out var u) ? u : 0,
+            personalOthers.TryGetValue(r.Id, out var other) ? other : null
         )).ToList();
 
         return Results.Ok(items);
