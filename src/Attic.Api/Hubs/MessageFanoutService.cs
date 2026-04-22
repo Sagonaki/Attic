@@ -31,17 +31,26 @@ public sealed class MessageFanoutService(
                 {
                     var channelId = item.ChannelId;
                     var segment = new ArraySegment<Guid>(memberIdsArray, 0, memberCount);
+
+                    // Phase 1: one batched round-trip for all member INCRs. ArraySegment<Guid>
+                    // implements IReadOnlyList<Guid> so the store can iterate without allocating.
+                    var newCounts = await unreadCounts.IncrementManyAsync(segment, channelId, stoppingToken);
+
+                    // Phase 2: parallel UnreadChanged broadcasts. Each SendAsync still publishes
+                    // independently through SignalR's backplane (can't batch without forking it).
                     var options = new ParallelOptions
                     {
                         CancellationToken = stoppingToken,
                         MaxDegreeOfParallelism = 32,
                     };
-                    await Parallel.ForEachAsync(segment, options, async (memberId, ct) =>
-                    {
-                        var newCount = await unreadCounts.IncrementAsync(memberId, channelId, ct);
-                        await hub.Clients.Group(GroupNames.User(memberId))
-                            .SendAsync("UnreadChanged", channelId, (int)newCount, ct);
-                    });
+                    await Parallel.ForEachAsync(
+                        System.Linq.Enumerable.Range(0, memberCount),
+                        options,
+                        async (i, ct) =>
+                        {
+                            await hub.Clients.Group(GroupNames.User(memberIdsArray[i]))
+                                .SendAsync("UnreadChanged", channelId, (int)newCounts[i], ct);
+                        });
                 }
             }
             catch (OperationCanceledException)

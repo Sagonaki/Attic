@@ -29,4 +29,15 @@ public sealed class InMemoryUnreadCountStore : IUnreadCountStore
         _counts[(userId, channelId)] = value;
         return Task.CompletedTask;
     }
+
+    public Task<long[]> IncrementManyAsync(IReadOnlyList<Guid> userIds, Guid channelId, CancellationToken ct)
+    {
+        var results = new long[userIds.Count];
+        for (int i = 0; i < userIds.Count; i++)
+        {
+            var newValue = _counts.AddOrUpdate((userIds[i], channelId), 1L, (_, old) => Interlocked.Increment(ref old));
+            results[i] = newValue;
+        }
+        return Task.FromResult(results);
+    }
 }

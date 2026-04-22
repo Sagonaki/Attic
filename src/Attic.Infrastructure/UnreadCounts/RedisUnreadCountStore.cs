@@ -20,4 +20,15 @@ public sealed class RedisUnreadCountStore(IConnectionMultiplexer connection) : I
 
     public Task SetAsync(Guid userId, Guid channelId, long value, CancellationToken ct)
         => connection.GetDatabase().StringSetAsync(Key(userId, channelId), value);
+
+    public Task<long[]> IncrementManyAsync(IReadOnlyList<Guid> userIds, Guid channelId, CancellationToken ct)
+    {
+        var db = connection.GetDatabase();
+        var batch = db.CreateBatch();
+        var tasks = new Task<long>[userIds.Count];
+        for (int i = 0; i < userIds.Count; i++)
+            tasks[i] = batch.StringIncrementAsync(Key(userIds[i], channelId));
+        batch.Execute();
+        return Task.WhenAll(tasks);
+    }
 }
