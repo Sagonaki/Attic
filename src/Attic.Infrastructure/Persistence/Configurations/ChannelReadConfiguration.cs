@@ -13,5 +13,17 @@ public sealed class ChannelReadConfiguration : IEntityTypeConfiguration<ChannelR
 
         // Lookup by user for "how many unread across all my channels?" — secondary index.
         b.HasIndex(c => c.UserId).HasDatabaseName("ix_channel_reads_user");
+
+        b.HasOne<Channel>()
+         .WithMany()
+         .HasForeignKey(r => r.ChannelId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_channel_reads_channel");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(r => r.UserId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_channel_reads_user");
     }
 }
