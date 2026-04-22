@@ -14,6 +14,7 @@ import { disposeHubClient } from '../api/signalr';
 import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
 import { Sessions } from '../auth/Sessions';
+import { MyProfile } from '../auth/MyProfile';
 import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -73,7 +74,8 @@ export function ChatShell() {
           {pathname === '/invitations' && <InvitationsInbox />}
           {pathname === '/contacts' && <Contacts />}
           {pathname === '/settings/sessions' && <Sessions />}
-          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && pathname !== '/settings/sessions' && (
+          {pathname === '/profile' && <MyProfile />}
+          {pathname !== '/catalog' && pathname !== '/invitations' && pathname !== '/contacts' && pathname !== '/settings/sessions' && pathname !== '/profile' && (
             <>
               <div className="flex-1 flex flex-col"><ChatWindow /></div>
               {channelId && <RoomDetails channelId={channelId} />}

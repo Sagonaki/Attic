@@ -21,6 +21,7 @@ export default function App() {
             <Route path="/invitations" element={<ChatShell />} />
             <Route path="/contacts" element={<ChatShell />} />
             <Route path="/settings/sessions" element={<ChatShell />} />
+            <Route path="/profile" element={<ChatShell />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
