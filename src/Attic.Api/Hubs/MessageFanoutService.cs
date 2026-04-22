@@ -29,19 +29,19 @@ public sealed class MessageFanoutService(
 
                 if (memberCount > 0)
                 {
-                    var unreadTasks = new Task[memberCount];
-                    for (int i = 0; i < memberCount; i++)
+                    var channelId = item.ChannelId;
+                    var segment = new ArraySegment<Guid>(memberIdsArray, 0, memberCount);
+                    var options = new ParallelOptions
                     {
-                        var memberId = memberIdsArray[i];
-                        var channelId = item.ChannelId;
-                        unreadTasks[i] = Task.Run(async () =>
-                        {
-                            var newCount = await unreadCounts.IncrementAsync(memberId, channelId, stoppingToken);
-                            await hub.Clients.Group(GroupNames.User(memberId))
-                                .SendAsync("UnreadChanged", channelId, (int)newCount, stoppingToken);
-                        }, stoppingToken);
-                    }
-                    await Task.WhenAll(unreadTasks);
+                        CancellationToken = stoppingToken,
+                        MaxDegreeOfParallelism = 32,
+                    };
+                    await Parallel.ForEachAsync(segment, options, async (memberId, ct) =>
+                    {
+                        var newCount = await unreadCounts.IncrementAsync(memberId, channelId, ct);
+                        await hub.Clients.Group(GroupNames.User(memberId))
+                            .SendAsync("UnreadChanged", channelId, (int)newCount, ct);
+                    });
                 }
             }
             catch (OperationCanceledException)
