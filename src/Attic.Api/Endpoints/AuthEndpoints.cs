@@ -19,8 +19,7 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth");
 
-        group.MapPost("/register", Register).AllowAnonymous()
-             .RequireRateLimiting(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed);
+        group.MapPost("/register", Register).AllowAnonymous();
         group.MapPost("/login", Login).AllowAnonymous()
              .RequireRateLimiting(Attic.Api.RateLimiting.RateLimitPolicyNames.AuthFixed);
         group.MapPost("/logout", Logout).RequireAuthorization();
