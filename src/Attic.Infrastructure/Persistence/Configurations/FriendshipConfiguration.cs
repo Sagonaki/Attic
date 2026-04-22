@@ -13,5 +13,17 @@ public sealed class FriendshipConfiguration : IEntityTypeConfiguration<Friendshi
 
         b.HasIndex(f => f.UserAId).HasDatabaseName("ix_friendships_user_a");
         b.HasIndex(f => f.UserBId).HasDatabaseName("ix_friendships_user_b");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(f => f.UserAId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_friendships_user_a");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(f => f.UserBId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_friendships_user_b");
     }
 }

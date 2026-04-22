@@ -21,5 +21,19 @@ public sealed class FriendRequestConfiguration : IEntityTypeConfiguration<Friend
             .IsUnique()
             .HasDatabaseName("ux_friend_requests_sender_recipient_pending")
             .HasFilter($"status = {(int)FriendRequestStatus.Pending}");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(r => r.SenderId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_friend_requests_sender");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(r => r.RecipientId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_friend_requests_recipient");
+
+        b.ToTable(t => t.HasCheckConstraint("ck_friend_requests_status_enum", "status IN (0,1,2,3)"));
     }
 }

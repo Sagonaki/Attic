@@ -22,5 +22,24 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.HasIndex(m => new { m.SenderId, m.Id })
             .IsDescending(false, true)
             .HasDatabaseName("ix_messages_sender_id_desc");
+
+        b.HasOne<Channel>()
+         .WithMany()
+         .HasForeignKey(m => m.ChannelId)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("fk_messages_channel");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(m => m.SenderId)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("fk_messages_sender");
+
+        // Self-FK: reply_to_id is nullable; SET NULL if parent is deleted.
+        b.HasOne<Message>()
+         .WithMany()
+         .HasForeignKey(m => m.ReplyToId)
+         .OnDelete(DeleteBehavior.SetNull)
+         .HasConstraintName("fk_messages_reply_to");
     }
 }
