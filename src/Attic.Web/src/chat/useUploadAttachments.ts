@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { attachmentsApi } from '../api/attachments';
 import type { UploadAttachmentResponse } from '../types';
 
@@ -25,6 +26,7 @@ export function useUploadAttachments() {
         setPending(prev => prev.map(x =>
           x.id === p.id ? { ...x, status: 'done', attachment: resp } : x));
       } catch (e) {
+        toast.error('Upload failed', { description: (e as Error).message });
         setPending(prev => prev.map(x =>
           x.id === p.id ? { ...x, status: 'error', error: (e as Error).message } : x));
       }
