@@ -24,7 +24,8 @@ public sealed class ChatHub(
     Attic.Infrastructure.Presence.IPresenceStore presenceStore,
     AuditLogContext audit,
     HubRateLimiter rateLimiter,
-    IUnreadCountStore unreadCounts) : Hub
+    IUnreadCountStore unreadCounts,
+    IMessageFanoutQueue fanoutQueue) : Hub
 {
     public const string Path = "/hub";
 
@@ -149,16 +150,11 @@ public sealed class ChatHub(
         var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, senderUsername, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
             attachmentDtos);
 
-        await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
-
-        // Redis-backed unread counters: one INCR per non-sender member instead of a COUNT query.
-        var fanoutTasks = memberIds.Select(async memberId =>
-        {
-            var newCount = await unreadCounts.IncrementAsync(memberId, request.ChannelId, default);
-            await Clients.Group(GroupNames.User(memberId))
-                .SendAsync("UnreadChanged", request.ChannelId, (int)newCount);
-        });
-        await Task.WhenAll(fanoutTasks);
+        // Fan-out (MessageCreated broadcast + per-member unread INCR + UnreadChanged
+        // broadcast) moves to MessageFanoutService so this hub method returns as soon
+        // as the row is persisted. Preserves per-channel order: enqueue happens after
+        // SaveChanges so DB commit wins the race against any downstream read.
+        fanoutQueue.TryEnqueue(new MessageFanoutWorkItem(msg.ChannelId, dto, memberIds));
 
         return new SendMessageResponse(true, msg.Id, msg.CreatedAt, null);
     }

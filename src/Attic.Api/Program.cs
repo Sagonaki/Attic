@@ -57,6 +57,13 @@ builder.Services.AddSingleton<Attic.Infrastructure.Presence.IPresenceStore,
 builder.Services.AddSingleton<Attic.Infrastructure.UnreadCounts.IUnreadCountStore,
                               Attic.Infrastructure.UnreadCounts.RedisUnreadCountStore>();
 
+// Background fan-out: hub SendMessage enqueues a work item; this service broadcasts
+// MessageCreated + per-member UnreadChanged off the hub invocation path.
+builder.Services.AddSingleton<Attic.Api.Hubs.MessageFanoutQueue>();
+builder.Services.AddSingleton<Attic.Api.Hubs.IMessageFanoutQueue>(
+    sp => sp.GetRequiredService<Attic.Api.Hubs.MessageFanoutQueue>());
+builder.Services.AddHostedService<Attic.Api.Hubs.MessageFanoutService>();
+
 builder.Services.AddScoped<Attic.Api.Hubs.PresenceEventBroadcaster>();
 builder.Services.AddHostedService<Attic.Api.Services.PresenceHostedService>();
 builder.Services.AddScoped<Attic.Api.Hubs.SessionsEventBroadcaster>();
