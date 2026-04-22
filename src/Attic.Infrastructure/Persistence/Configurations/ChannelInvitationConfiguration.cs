@@ -20,5 +20,25 @@ public sealed class ChannelInvitationConfiguration : IEntityTypeConfiguration<Ch
             .IsUnique()
             .HasDatabaseName("ux_channel_invitations_channel_invitee_pending")
             .HasFilter($"status = {(int)InvitationStatus.Pending}");
+
+        b.HasOne<Channel>()
+         .WithMany()
+         .HasForeignKey(i => i.ChannelId)
+         .OnDelete(DeleteBehavior.Cascade)
+         .HasConstraintName("fk_channel_invitations_channel");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(i => i.InviterId)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("fk_channel_invitations_inviter");
+
+        b.HasOne<User>()
+         .WithMany()
+         .HasForeignKey(i => i.InviteeId)
+         .OnDelete(DeleteBehavior.Restrict)
+         .HasConstraintName("fk_channel_invitations_invitee");
+
+        b.ToTable(t => t.HasCheckConstraint("ck_channel_invitations_status_enum", "status IN (0,1,2,3)"));
     }
 }
