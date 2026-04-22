@@ -6,6 +6,7 @@ import { usersApi } from '../api/users';
 import { useAuth } from '../auth/useAuth';
 import { useFriends } from './useFriends';
 import { useFriendRequests } from './useFriendRequests';
+import { useBlocks } from './useBlocks';
 import { useOpenPersonalChat } from './useOpenPersonalChat';
 import { SendFriendRequestModal } from './SendFriendRequestModal';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export function Contacts() {
 
   const { data: friends } = useFriends();
   const { data: requests } = useFriendRequests();
+  const { data: blocks } = useBlocks();
   const incoming = (requests ?? []).filter(r => r.recipientId === user?.id);
   const outgoing = (requests ?? []).filter(r => r.senderId === user?.id);
 
@@ -44,7 +46,17 @@ export function Contacts() {
   });
   const block = useMutation({
     mutationFn: (userId: string) => usersApi.block(userId),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['friends'] }); },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['friends'] });
+      void qc.invalidateQueries({ queryKey: ['blocks'] });
+    },
+  });
+  const unblock = useMutation({
+    mutationFn: (userId: string) => usersApi.unblock(userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['blocks'] });
+      void qc.invalidateQueries({ queryKey: ['friends'] });
+    },
   });
 
   return (
@@ -66,6 +78,9 @@ export function Contacts() {
           </TabsTrigger>
           <TabsTrigger value="outgoing">
             Outgoing <Badge variant="secondary" className="ml-2 h-5">{outgoing.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="blocked">
+            Blocked <Badge variant="secondary" className="ml-2 h-5">{(blocks ?? []).length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -158,6 +173,33 @@ export function Contacts() {
                       Pending since {new Date(r.createdAt).toLocaleString()}
                     </div>
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+
+        <TabsContent value="blocked">
+          {(blocks ?? []).length === 0 ? (
+            <div className="p-8 text-muted-foreground text-sm text-center border rounded-lg bg-card">
+              No blocked users.
+            </div>
+          ) : (
+            <ul className="divide-y border rounded-lg bg-card">
+              {(blocks ?? []).map(b => (
+                <li key={b.userId} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar username={b.username} />
+                    <div>
+                      <div className="font-medium">{b.username}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Blocked {new Date(b.blockedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => unblock.mutate(b.userId)}>
+                    Unblock
+                  </Button>
                 </li>
               ))}
             </ul>
