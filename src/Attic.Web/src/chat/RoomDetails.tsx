@@ -3,14 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Trash2, UserPlus, ChevronUp, ChevronDown, Ban, MoreHorizontal } from 'lucide-react';
 import { channelsApi } from '../api/channels';
-import { invitationsApi } from '../api/invitations';
 import { useAuth } from '../auth/useAuth';
+import { InviteToChannelModal } from './InviteToChannelModal';
 import { useChannelDetails } from './useChannelDetails';
 import { useChannelMembers } from './useChannelMembers';
 import { usePresence } from './usePresence';
 import type { ChannelMemberSummary } from '../types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,11 +49,7 @@ export function RoomDetails({ channelId }: { channelId: string }) {
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['channel-members', channelId] }); },
   });
 
-  const [inviteUsername, setInviteUsername] = useState('');
-  const invite = useMutation({
-    mutationFn: () => invitationsApi.issue(channelId, { username: inviteUsername.trim() }),
-    onSuccess: () => setInviteUsername(''),
-  });
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
     <aside className="w-72 border-l bg-card text-sm flex flex-col">
@@ -68,15 +63,10 @@ export function RoomDetails({ channelId }: { channelId: string }) {
       </div>
 
       {details?.kind === 'private' && canManage && (
-        <div className="p-4 border-b space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invite</div>
-          <div className="flex gap-2">
-            <Input value={inviteUsername} onChange={e => setInviteUsername(e.target.value)}
-                   placeholder="Username" className="h-8" />
-            <Button size="sm" onClick={() => invite.mutate()} disabled={invite.isPending || !inviteUsername.trim()}>
-              <UserPlus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        <div className="p-4 border-b">
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="h-3.5 w-3.5" />Invite user
+          </Button>
         </div>
       )}
 
@@ -110,6 +100,7 @@ export function RoomDetails({ channelId }: { channelId: string }) {
           </Button>
         )}
       </div>
+      {inviteOpen && <InviteToChannelModal channelId={channelId} onClose={() => setInviteOpen(false)} />}
     </aside>
   );
 }
