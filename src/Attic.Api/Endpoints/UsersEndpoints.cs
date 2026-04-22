@@ -18,10 +18,29 @@ public static class UsersEndpoints
         var group = routes.MapGroup("/api/users").RequireAuthorization();
 
         group.MapGet("/search", Search);
+        group.MapGet("/blocks", ListBlocks);
         group.MapPost("/{userId:guid}/block", Block);
         group.MapDelete("/{userId:guid}/block", Unblock);
 
         return routes;
+    }
+
+    private static async Task<IResult> ListBlocks(
+        AtticDbContext db,
+        CurrentUser currentUser,
+        CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return Results.Unauthorized();
+        var me = currentUser.UserIdOrThrow;
+
+        var rows = await db.UserBlocks.AsNoTracking()
+            .Where(b => b.BlockerId == me)
+            .Join(db.Users.IgnoreQueryFilters(), b => b.BlockedId, u => u.Id,
+                  (b, u) => new BlockedUserDto(u.Id, u.Username, b.CreatedAt))
+            .OrderByDescending(b => b.BlockedAt)
+            .ToListAsync(ct);
+
+        return Results.Ok(rows);
     }
 
     private static async Task<IResult> Search(
