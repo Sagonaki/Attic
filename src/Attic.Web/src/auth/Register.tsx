@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { UserPlus } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from './useAuth';
 import type { MeResponse, ApiError } from '../types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export function Register() {
   const { setUser } = useAuth();
@@ -13,10 +16,10 @@ export function Register() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+    setBusy(true);
     try {
       const me = await api.post<MeResponse>('/api/auth/register', { email, username, password });
       setUser(me);
@@ -30,23 +33,30 @@ export function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <form onSubmit={submit} className="w-96 bg-white rounded-xl shadow p-6 space-y-4">
-        <h1 className="text-xl font-semibold">Create an Attic account</h1>
-        <input className="w-full border rounded px-3 py-2" type="email" placeholder="Email"
-               value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
-        <input className="w-full border rounded px-3 py-2" placeholder="Username (3-32 chars, letters/digits/_/-)"
-               value={username} onChange={e => setUsername(e.target.value)} required pattern="[A-Za-z0-9_-]{3,32}" />
-        <input className="w-full border rounded px-3 py-2" type="password" placeholder="Password (min 8 chars)"
-               value={password} onChange={e => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        <button disabled={busy} className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-50">
-          {busy ? 'Registering…' : 'Register'}
-        </button>
-        <div className="text-sm text-slate-500">
-          Already have an account? <Link to="/login" className="text-blue-600">Sign in</Link>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-sm border bg-card text-card-foreground rounded-lg shadow-sm p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <UserPlus className="h-5 w-5" />
+          <h1 className="text-xl font-semibold">Create account</h1>
         </div>
-      </form>
+        <form onSubmit={onSubmit} className="space-y-3">
+          <Input type="email" placeholder="Email" autoComplete="email" required
+                 value={email} onChange={e => setEmail(e.target.value)} />
+          <Input placeholder="Username (3-32 chars, letters/digits/_/-)"
+                 value={username} onChange={e => setUsername(e.target.value)}
+                 required pattern="[A-Za-z0-9_-]{3,32}" />
+          <Input type="password" placeholder="Password (min 8 chars)" autoComplete="new-password"
+                 required minLength={8}
+                 value={password} onChange={e => setPassword(e.target.value)} />
+          {error && <div className="text-sm text-destructive">{error}</div>}
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy ? 'Registering…' : 'Register'}
+          </Button>
+        </form>
+        <div className="text-sm text-muted-foreground text-center">
+          Already have an account? <Link to="/login" className="underline underline-offset-4">Sign in</Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,23 +4,28 @@ import { AuthGate } from './auth/AuthGate';
 import { Login } from './auth/Login';
 import { Register } from './auth/Register';
 import { ChatShell } from './chat/ChatShell';
+import { ThemeProvider } from './theme/ThemeProvider';
+import { Toaster } from './components/ui/sonner';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route element={<AuthGate />}>
-          <Route path="/" element={<ChatShell />} />
-          <Route path="/chat/:channelId" element={<ChatShell />} />
-          <Route path="/catalog" element={<ChatShell />} />
-          <Route path="/invitations" element={<ChatShell />} />
-          <Route path="/contacts" element={<ChatShell />} />
-          <Route path="/settings/sessions" element={<ChatShell />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route element={<AuthGate />}>
+            <Route path="/" element={<ChatShell />} />
+            <Route path="/chat/:channelId" element={<ChatShell />} />
+            <Route path="/catalog" element={<ChatShell />} />
+            <Route path="/invitations" element={<ChatShell />} />
+            <Route path="/contacts" element={<ChatShell />} />
+            <Route path="/settings/sessions" element={<ChatShell />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { LogOut, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import { ChatWindow } from './ChatWindow';
@@ -14,6 +15,13 @@ import { useRemovedFromChannel } from './useRemovedFromChannel';
 import { useActivityTracker } from './useActivityTracker';
 import { Sessions } from '../auth/Sessions';
 import { DeleteAccountModal } from '../auth/DeleteAccountModal';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/ui/avatar';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export function ChatShell() {
   const { user, setUser } = useAuth();
@@ -34,12 +42,28 @@ export function ChatShell() {
 
   return (
     <div className="h-screen flex flex-col">
-      <header className="flex items-center justify-between px-4 py-2 border-b bg-white">
+      <header className="flex items-center justify-between px-4 py-2 border-b bg-card text-card-foreground">
         <div className="font-semibold">Attic</div>
-        <div className="text-sm text-slate-600">
-          {user?.username}
-          <button onClick={logout} className="ml-4 text-blue-600">Sign out</button>
-          <button onClick={() => setDeleteOpen(true)} className="ml-4 text-red-600">Delete account</button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-2">
+                <UserAvatar username={user?.username} className="h-6 w-6" />
+                <span className="text-sm">{user?.username}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="h-4 w-4" /> Sign out
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4" /> Delete account
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <div className="flex-1 flex overflow-hidden">

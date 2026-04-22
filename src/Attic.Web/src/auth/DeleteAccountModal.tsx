@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { authExtrasApi } from '../api/authExtras';
 import { disposeHubClient } from '../api/signalr';
 import { useAuth } from './useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
 export function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   const [password, setPassword] = useState('');
@@ -22,24 +25,27 @@ export function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow p-6 w-96 space-y-3" onClick={e => e.stopPropagation()}>
-        <h2 className="font-semibold text-red-600">Delete account</h2>
-        <p className="text-sm text-slate-600">
-          This permanently deletes your account and cascades to rooms you own. This action cannot be undone.
-        </p>
-        <input type="password" autoComplete="current-password"
-               className="w-full border rounded px-3 py-2" placeholder="Confirm password"
-               value={password} onChange={e => setPassword(e.target.value)} />
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1 text-sm">Cancel</button>
-          <button onClick={() => del.mutate()} disabled={!password || del.isPending}
-                  className="px-3 py-1 text-sm bg-red-600 text-white rounded disabled:opacity-50">
-            {del.isPending ? 'Deleting…' : 'Delete account'}
-          </button>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-destructive">Delete account</DialogTitle>
+          <DialogDescription>
+            This permanently deletes your account and cascades to rooms you own. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input type="password" autoComplete="current-password"
+                 placeholder="Confirm password"
+                 value={password} onChange={e => setPassword(e.target.value)} />
+          {error && <div className="text-sm text-destructive">{error}</div>}
         </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={() => del.mutate()} disabled={!password || del.isPending}>
+            {del.isPending ? 'Deleting…' : 'Delete account'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
