@@ -70,18 +70,21 @@ public sealed class ChatHub(
         if (!validation.IsValid)
             return new SendMessageResponse(false, null, null, validation.Errors[0].ErrorCode);
 
-        var member = await db.ChannelMembers
-            .IgnoreQueryFilters()
-            .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.ChannelId == request.ChannelId && m.UserId == userId.Value);
+        // One round-trip for the channel's kind plus the caller's membership row
+        // (ban rows included so CanPostInChannel can reject them cleanly).
+        var pre = await (from c in db.Channels.AsNoTracking()
+                         where c.Id == request.ChannelId
+                         from m in db.ChannelMembers.IgnoreQueryFilters().AsNoTracking()
+                             .Where(mm => mm.ChannelId == c.Id && mm.UserId == userId.Value)
+                             .DefaultIfEmpty()
+                         select new { c.Kind, Member = m })
+                        .FirstOrDefaultAsync();
 
-        var auth = AuthorizationRules.CanPostInChannel(member);
+        var auth = AuthorizationRules.CanPostInChannel(pre?.Member);
         if (!auth.Allowed) return new SendMessageResponse(false, null, null, auth.Reason.ToString());
 
         // Personal-chat: friendship + no-block gate.
-        var channel = await db.Channels.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.ChannelId);
-        if (channel is { Kind: Attic.Domain.Enums.ChannelKind.Personal })
+        if (pre is { Kind: Attic.Domain.Enums.ChannelKind.Personal })
         {
             var otherId = await db.ChannelMembers.AsNoTracking()
                 .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
@@ -108,6 +111,7 @@ public sealed class ChatHub(
         db.Messages.Add(msg);
         await db.SaveChangesAsync();   // Populates message.Id.
 
+        AttachmentDto[]? attachmentDtos = null;
         if (request.AttachmentIds is { Length: > 0 })
         {
             var attachmentIds = request.AttachmentIds;
@@ -121,27 +125,33 @@ public sealed class ChatHub(
 
             foreach (var a in attachments) a.BindToMessage(msg.Id);
             await db.SaveChangesAsync();
+
+            // Project from the tracked rows — the persisted state matches in-memory after SaveChanges.
+            attachmentDtos = attachments.Select(a => new AttachmentDto(
+                a.Id, a.OriginalFileName, a.ContentType, a.SizeBytes, a.Comment)).ToArray();
         }
 
-        var sender = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId.Value);
+        // One round-trip for sender username + member roster. IgnoreQueryFilters so the
+        // sender row is present even if concurrently banned; banned peers are filtered
+        // out in memory so fan-out skips them.
+        var memberships = await (from m in db.ChannelMembers.IgnoreQueryFilters().AsNoTracking()
+                                 join u in db.Users.AsNoTracking() on m.UserId equals u.Id
+                                 where m.ChannelId == request.ChannelId
+                                 select new { m.UserId, u.Username, IsBanned = m.BannedAt != null })
+                                .ToListAsync();
 
-        var attachmentDtos = await db.Attachments.AsNoTracking()
-            .Where(a => a.MessageId == msg.Id)
-            .Select(a => new AttachmentDto(
-                a.Id, a.OriginalFileName, a.ContentType, a.SizeBytes, a.Comment))
-            .ToArrayAsync();
+        var senderUsername = memberships.First(x => x.UserId == userId.Value).Username;
+        var memberIds = memberships
+            .Where(x => x.UserId != userId.Value && !x.IsBanned)
+            .Select(x => x.UserId)
+            .ToList();
 
-        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, sender.Username, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
-            attachmentDtos.Length > 0 ? attachmentDtos : null);
+        var dto = new MessageDto(msg.Id, msg.ChannelId, msg.SenderId, senderUsername, msg.Content, msg.ReplyToId, msg.CreatedAt, null,
+            attachmentDtos);
 
         await Clients.Group(GroupNames.Channel(msg.ChannelId)).SendAsync("MessageCreated", dto);
 
         // Redis-backed unread counters: one INCR per non-sender member instead of a COUNT query.
-        var memberIds = await db.ChannelMembers.AsNoTracking()
-            .Where(m => m.ChannelId == request.ChannelId && m.UserId != userId.Value)
-            .Select(m => m.UserId)
-            .ToListAsync();
-
         var fanoutTasks = memberIds.Select(async memberId =>
         {
             var newCount = await unreadCounts.IncrementAsync(memberId, request.ChannelId, default);

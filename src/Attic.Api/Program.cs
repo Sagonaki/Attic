@@ -9,6 +9,11 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.RateLimiting;
 
+// Prime the ThreadPool so a 300-user SignalR fan-out burst doesn't sit in the pool's
+// growth-throttling window (default starts around CPU-count). Values match the load
+// test's concurrent-user target with headroom for completion-port callbacks.
+System.Threading.ThreadPool.SetMinThreads(workerThreads: 200, completionPortThreads: 200);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
