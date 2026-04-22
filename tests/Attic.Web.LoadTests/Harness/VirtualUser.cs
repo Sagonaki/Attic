@@ -4,6 +4,7 @@ using Attic.Contracts.Auth;
 using Attic.Contracts.Channels;
 using Attic.Contracts.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Attic.Web.LoadTests.Harness;
 
@@ -64,6 +65,7 @@ public sealed class VirtualUser : IAsyncDisposable
                 };
             })
             .WithAutomaticReconnect()
+            .AddMessagePackProtocol()
             .Build();
 
         _hub.On<MessageDto>("MessageCreated", _ => { MessagesReceived++; });

@@ -39,7 +39,7 @@ builder.Services.AddSignalR(o =>
 }).AddHubOptions<Attic.Api.Hubs.ChatHub>(o =>
 {
     o.AddFilter(typeof(Attic.Api.Hubs.ChatHubFilter));
-}).AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis") ?? "localhost:6379");
+}).AddStackExchangeRedis(builder.Configuration.GetConnectionString("redis") ?? "localhost:6379").AddMessagePackProtocol();
 
 // Register the hub filter in DI so its ILogger dependency can be resolved.
 builder.Services.AddScoped<Attic.Api.Hubs.ChatHubFilter>();
