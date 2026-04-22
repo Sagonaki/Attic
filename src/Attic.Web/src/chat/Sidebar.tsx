@@ -50,9 +50,11 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
       </div>
 
       <div className="p-2 border-b flex gap-1">
-        <Button asChild variant="outline" size="sm" className="flex-1">
-          <Link to="/catalog"><BookOpen className="h-3.5 w-3.5" />Catalog</Link>
-        </Button>
+        {tab === 'public' && (
+          <Button asChild variant="outline" size="sm" className="flex-1">
+            <Link to="/catalog"><BookOpen className="h-3.5 w-3.5" />Catalog</Link>
+          </Button>
+        )}
         {tab === 'personal' ? (
           <Button variant="outline" size="sm" className="flex-1" onClick={promptAndOpen}>
             <Plus className="h-3.5 w-3.5" />Personal chat
