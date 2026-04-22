@@ -38,7 +38,7 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm border bg-card text-card-foreground rounded-lg shadow-sm p-6 space-y-4">
         <div className="flex flex-col items-center gap-2">
-          <img src={logoUrl} alt="Attic" className="h-16 w-16 rounded-full object-cover" />
+          <img src={logoUrl} alt="Attic" className="h-14 aspect-[16/9] rounded-md object-cover" />
           <h1 className="text-xl font-semibold">Sign in</h1>
         </div>
         <form onSubmit={onSubmit} className="space-y-3">

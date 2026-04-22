@@ -50,7 +50,7 @@ export function ChatShell() {
     <div className="h-screen flex flex-col">
       <header className="flex items-center justify-between px-4 py-2 border-b bg-card text-card-foreground">
         <div className="flex items-center gap-2 font-semibold">
-          <img src={logoUrl} alt="Attic" className="h-6 w-6 rounded object-cover" />
+          <img src={logoUrl} alt="Attic" className="h-6 aspect-[16/9] rounded-sm object-cover" />
           <span>Attic</span>
         </div>
         <div className="flex items-center gap-1">
