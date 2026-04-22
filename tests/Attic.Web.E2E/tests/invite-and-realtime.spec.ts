@@ -29,7 +29,8 @@ test('A invites B to private, B accepts, A sends, B sees in realtime', async ({ 
   await pageB.goto('/invitations');
   await pageB.getByRole('button', { name: /^accept$/i }).first().click();
   // B is now in the room — the sidebar's Private tab should list it.
-  await pageB.getByRole('button', { name: /private/i }).click();
+  // Sidebar tabs are Radix TabsTrigger → role="tab" (not "button").
+  await pageB.getByRole('tab', { name: /private/i }).click();
   await expect(pageB.getByRole('link', { name: new RegExp(roomName) })).toBeVisible({ timeout: 15_000 });
 
   // A sends a message.

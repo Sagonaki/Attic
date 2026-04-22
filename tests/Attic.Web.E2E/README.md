@@ -23,9 +23,37 @@ Aspire run happens to bind there, you can skip the export.
 
 ## Scenarios
 
+Golden-path / realtime:
+
 - `register-create-post.spec.ts` — register → create room → send message → reload → persists.
 - `invite-and-realtime.spec.ts` — two contexts, private-room invite accepted, realtime message.
 - `attachment-access.spec.ts` — image upload, per-membership download authorization.
+- `unread-counter.spec.ts` — two contexts; UnreadChanged badge increments over the hub; MarkRead resets it.
+
+Messaging actions:
+
+- `edit-message.spec.ts` — sender edits their own message, `(edited)` marker + new content render.
+- `delete-message.spec.ts` — sender deletes their own message, row disappears, others stay.
+- `reply-to.spec.ts` — reply composer quotes the original as context on the reply row.
+
+Rooms:
+
+- `join-catalog.spec.ts` — user browses `/catalog`, joins someone else's public room, posts there.
+
+Friends + blocks:
+
+- `friend-dm.spec.ts` — friend-request → accept → open DM → message delivers.
+- `block-denies-post.spec.ts` — after a block the friendship is removed on both sides.
+
+Auth + UI affordances:
+
+- `forgot-password.spec.ts` — the dialog submits cleanly and the UI stays on `/login`.
+- `theme-toggle.spec.ts` — toggling the theme updates `<html>`'s class and persists across reload.
+
+Emoji-picker regression:
+
+- `emoji-picker.spec.ts` — regression guard for the `left-0` positioning fix (commit 8eb752a):
+  the picker lands inside MAIN's clip region and clicking a tile inserts the emoji into the composer.
 
 ## Development
 

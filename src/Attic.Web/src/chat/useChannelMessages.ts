@@ -32,7 +32,17 @@ export function useChannelMessages(channelId: string) {
           return { pages: [{ items: [msg], nextCursor: null }], pageParams: [null] };
         }
         const first = prev.pages[0];
-        if (first.items.some(m => m.id === msg.id)) return prev;
+        const existingIdx = first.items.findIndex(m => m.id === msg.id);
+        if (existingIdx >= 0) {
+          // The broadcast for a message we already have (either via optimistic
+          // ack or a duplicated event). Merge instead of dropping so fields that
+          // only the broadcast carries — notably `attachments`, which the
+          // optimistic row stamps as null — aren't lost to the dedupe.
+          const merged = { ...first.items[existingIdx], ...msg };
+          const newItems = first.items.slice();
+          newItems[existingIdx] = merged;
+          return { ...prev, pages: [{ ...first, items: newItems }, ...prev.pages.slice(1)] };
+        }
         return { ...prev, pages: [{ ...first, items: [msg, ...first.items] }, ...prev.pages.slice(1)] };
       });
     });
