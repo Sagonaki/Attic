@@ -4,6 +4,7 @@ using Attic.Infrastructure;
 using Attic.Infrastructure.Persistence;
 using Attic.Infrastructure.Persistence.Seed;
 using FluentValidation;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,22 @@ builder.AddAtticDbContext("attic");
 // Use AddRedisClient (Aspire.StackExchange.Redis) which exposes IConnectionMultiplexer.
 // Phase 1 only needs Redis for the SignalR backplane — no distributed cache required.
 builder.AddRedisClient("redis");
+
+// Persist DataProtection keys to a directory backed by a named volume in
+// compose so auth cookies survive container restarts. Without this every
+// `compose up` regenerates keys and force-logs-out every active user.
+// SetApplicationName pins the purpose string so different services can't
+// cross-decrypt each other's payloads. The Directory.Exists guard keeps
+// integration tests on the in-memory default since they don't mount the
+// volume — without it AddDataProtection would create the path inside
+// the test host's working directory.
+var dpKeysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/data/dp-keys";
+if (Directory.Exists(dpKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("Attic.Api")
+        .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
+}
 
 builder.Services.AddAtticInfrastructure();
 builder.Services.AddAtticAuth();
@@ -136,7 +153,17 @@ app.UseMiddleware<Attic.Api.Security.SecurityHeadersMiddleware>();
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // Only redirect to HTTPS when the host actually exposes an HTTPS port.
+    // Container deployments terminate TLS at the reverse proxy (nginx) and
+    // bind the API on plain HTTP only — without this guard the middleware
+    // logs "Failed to determine the https port for redirect" on first hit.
+    var httpsPort = app.Configuration["ASPNETCORE_HTTPS_PORTS"]
+                  ?? app.Configuration["HTTPS_PORT"]
+                  ?? app.Configuration["https_port"];
+    if (!string.IsNullOrWhiteSpace(httpsPort))
+    {
+        app.UseHttpsRedirection();
+    }
 }
 
 app.UseCors();

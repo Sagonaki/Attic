@@ -53,11 +53,15 @@ public static class AtticServiceDefaultsExtensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
+        // Liveness/readiness must work in every environment so container
+        // orchestrators (compose, k8s) can gate startup on them. The Aspire
+        // template gates these to Development; that's wrong for any
+        // deployment that doesn't run under Aspire.
+        app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
         {
-            app.MapHealthChecks("/health/live");
-            app.MapHealthChecks("/health/ready");
-        }
+            Predicate = r => r.Tags.Contains("live")
+        });
+        app.MapHealthChecks("/health/ready");
         return app;
     }
 }

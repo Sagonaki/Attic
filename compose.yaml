@@ -54,11 +54,21 @@ services:
       Attachments__Root: "/data/attachments"
     volumes:
       - attachments:/data/attachments
+      - dp_keys:/data/dp-keys
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Healthcheck is duplicated from Dockerfile.api here so it's honored
+    # even when the image is built in OCI format (podman default), which
+    # silently strips HEALTHCHECK directives.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health/live"]
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      retries: 6
     # Expose the API on the host for direct curl / integration testing.
     # The SPA talks to the API through nginx on port 3000, not this one.
     ports:
@@ -71,6 +81,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
     ports:
       - "3000:80"
 
@@ -78,3 +94,4 @@ volumes:
   pg_data:
   redis_data:
   attachments:
+  dp_keys:

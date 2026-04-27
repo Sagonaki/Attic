@@ -28,13 +28,20 @@ RUN dotnet publish src/Attic.Api/Attic.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
 
+# Npgsql probes libgssapi_krb5.so.2 to detect GSSAPI/Kerberos auth
+# availability on first connection. Alpine omits krb5 from the base
+# image, so without this package every API boot logs a confusing
+# "Cannot load library libgssapi_krb5.so.2" line. We don't actually use
+# Kerberos auth — the install just satisfies the soft probe.
+RUN apk add --no-cache krb5-libs
+
 # Non-root user (Alpine).
 RUN addgroup -S attic && adduser -S attic -G attic
 COPY --from=build /app/publish ./
 
-# Attachments live in a bind-mounted volume in compose; make sure the
-# default path exists and is owned by the non-root user.
-RUN mkdir -p /data/attachments && chown -R attic:attic /data /app
+# Attachments + DataProtection keys live in named volumes in compose;
+# create both paths up front and chown to the non-root user.
+RUN mkdir -p /data/attachments /data/dp-keys && chown -R attic:attic /data /app
 USER attic
 
 ENV ASPNETCORE_URLS=http://+:8080 \
@@ -43,7 +50,7 @@ ENV ASPNETCORE_URLS=http://+:8080 \
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
-    CMD wget -qO- http://localhost:8080/openapi/v1.json > /dev/null || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=6 \
+    CMD wget -qO- http://localhost:8080/health/live > /dev/null || exit 1
 
 ENTRYPOINT ["dotnet", "Attic.Api.dll"]
