@@ -13,8 +13,8 @@ Everything runs through `docker compose` — no local .NET or Node toolchain
 required on the host.
 
 ```bash
-git clone <repo-url>
-cd attic
+git clone https://github.com/Sagonaki/Attic.git
+cd Attic
 docker compose up --build
 ```
 
@@ -23,8 +23,9 @@ When the four containers settle (postgres, redis, api, web):
 | URL                                 | What it is                               |
 | ----------------------------------- | ---------------------------------------- |
 | <http://localhost:3000>             | The SPA. This is what QA uses.           |
-| <http://localhost:8080/openapi/v1.json> | API's OpenAPI spec (handy for curl/CI). |
+| <http://localhost:8080/health/live> | API liveness probe. Returns `Healthy`.   |
 | `localhost:5432` / `localhost:6379` | Not exposed by default — compose keeps them on the internal bridge network. Uncomment the `ports:` under `postgres` / `redis` in `compose.yaml` if you need host access. |
+| OpenAPI spec                        | Dev-only — start the AppHost with `dotnet run` (see "Local development" below) to expose `/openapi/v1.json`. The compose stack runs in Production and intentionally does not publish it. |
 
 The migrations and the seed both run automatically on API startup. You'll land
 on the login screen at <http://localhost:3000/login>.
