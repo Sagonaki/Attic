@@ -62,6 +62,31 @@ docker compose down          # stop services, keep data
 docker compose down -v       # stop services AND wipe volumes (fresh seed next up)
 ```
 
+## Validated on
+
+- macOS 14 + Podman 5 (Apple silicon dev workstation).
+- Windows 11 + Podman Desktop (the original target host that motivated
+  Phase 20 — see `docs/superpowers/plans/2026-04-27-phase20-deploy-fixes.md`
+  for the smoke-test recipe).
+
+## Known follow-ups for production
+
+The compose stack is deliberately minimal — it's a "production-shaped"
+delivery target, not a hardened production deployment. Before pointing
+real users at it:
+
+- **TLS termination.** `deploy/nginx.conf` listens on plain HTTP. Add a
+  certificate volume + `listen 443 ssl` block (or front the stack with
+  a TLS-terminating load balancer such as Caddy or a cloud LB).
+- **DataProtection key encryption at rest.** Keys are persisted to the
+  `dp_keys` named volume in plaintext, which is fine for a single-tenant
+  host but unsuitable for multi-tenant or compliance-bound deployments.
+  Wrap them with `ProtectKeysWithCertificate(...)` or an
+  `IXmlEncryptor` backed by a KMS.
+- **Postgres password from secrets.** `compose.yaml` hard-codes
+  `attic_dev_password`. Move it to a `.env` file or a secret-manager
+  before deploying anywhere reachable from the public internet.
+
 ## Why no Aspire in `compose.yaml`?
 
 The `src/Attic.AppHost/` project is a **local-dev** orchestrator — it's great
